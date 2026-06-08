@@ -1,0 +1,18 @@
+{
+  "name": "golf-reports",
+  "version": "0.1.0",
+  "description": "Pull, analyze, and render your own golf data (Arccos + GHIN + 18Birdies): strokes-gained, satellite shot maps, HTML report + PDF. Login-based, no DevTools.",
+  "author": { "name": "chrisdecali" },
+  "skills": ["skills/golf-reports"],
+  "mcpServers": {
+    "golf-reports": {
+      "command": "python3",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/server.py"],
+      "env": {
+        "GOLF_STORE": "${HOME}/golf-data",
+        "GOLF_INGEST": "${CLAUDE_PLUGIN_ROOT}/ingest",
+        "GOLF_REPORTS": "${HOME}/golf-data/reports"
+      }
+    }
+  }
+}

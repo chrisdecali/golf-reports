@@ -1,0 +1,12 @@
+# Local data, reports, creds — NEVER commit (this repo is code only)
+store
+store/
+out/
+reports/
+golf-data/
+*_creds.json
+*creds*
+*.env
+*.log
+__pycache__/
+*.pyc
