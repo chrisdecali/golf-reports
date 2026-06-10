@@ -8,13 +8,13 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _SERVER_PATH = os.path.join(REPO, "mcp", "server.py")
 
 
-def _load_server(store: str):
+def _load_server(store: str = ""):
     """Load mcp/server.py via spec_from_file_location to avoid the mcp/ dir
     shadowing the installed mcp package when doing `from mcp.server.fastmcp import FastMCP`."""
-    # Temporarily remove repo mcp/ from sys.path so installed mcp package is found
+    # Snapshot sys.path so the restore is safe even when duplicates are present
+    saved = list(sys.path)
     mcp_dir = os.path.join(REPO, "mcp")
-    removed = mcp_dir in sys.path
-    if removed:
+    if mcp_dir in sys.path:
         sys.path.remove(mcp_dir)
     try:
         # Remove any previously cached module so reload picks up env changes
@@ -25,8 +25,7 @@ def _load_server(store: str):
         spec.loader.exec_module(mod)
         return mod
     finally:
-        if removed:
-            sys.path.insert(0, mcp_dir)
+        sys.path[:] = saved
 
 
 @pytest.fixture
@@ -51,3 +50,21 @@ def test_import_rejects_creds_lookalike_traversal(srv):
 
 def test_import_rejects_control_chars(srv):
     assert srv.import_18birdies("~/x\x00y.json").startswith("error")
+
+
+def test_ingest_defaults_to_bundled_dir(store, monkeypatch):
+    monkeypatch.delenv("GOLF_INGEST", raising=False)
+    monkeypatch.setenv("GOLF_STORE", store)
+    server = _load_server(store)
+    assert server.INGEST.endswith(os.path.join("golf-reports", "ingest"))
+    assert os.path.isfile(os.path.join(server.INGEST, "pull_arccos.py"))
+
+
+def test_import_valid_json_reaches_run(store, tmp_path, monkeypatch):
+    monkeypatch.setenv("GOLF_STORE", store)
+    server = _load_server(store)
+    monkeypatch.setattr(server, "HOME", str(tmp_path))
+    f = tmp_path / "archive.json"
+    f.write_text("{}")
+    monkeypatch.setattr(server, "_run", lambda *a: "stubbed:" + a[1])
+    assert server.import_18birdies(str(f)).startswith("stubbed:")

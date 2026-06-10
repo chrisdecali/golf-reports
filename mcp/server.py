@@ -9,8 +9,7 @@ not, which is why the engine lives here (see Codex/architecture notes).
 
 Env:
   GOLF_STORE   data dir the pull scripts write + render reads  (default ~/arccos_out)
-  GOLF_INGEST  dir holding pull_arccos.py / pull_ghin.py / pull_18birdies.py
-               (default ~ ; its ./arccos_out must equal GOLF_STORE)
+  GOLF_INGEST  dir holding the pull scripts (default: the ingest/ dir bundled next to this server)
   GOLF_REPORTS output dir for HTML/PDF  (default GOLF_STORE/reports)
 
 Tools: list_rounds, round_stats, render_round, get_report_paths,
@@ -26,7 +25,9 @@ import sys
 
 HOME = os.path.expanduser("~")
 STORE = os.environ.get("GOLF_STORE", os.path.join(HOME, "arccos_out"))
-INGEST = os.environ.get("GOLF_INGEST", HOME)
+_DEFAULT_INGEST = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ingest"))
+INGEST = os.environ.get("GOLF_INGEST", _DEFAULT_INGEST)
 REPORTS = os.environ.get("GOLF_REPORTS", os.path.join(STORE, "reports"))
 RENDER_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "render")
 sys.path.insert(0, os.path.abspath(RENDER_DIR))
