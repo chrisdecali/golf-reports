@@ -113,9 +113,19 @@ def sync_ghin() -> str:
 @mcp.tool()
 def import_18birdies(archive_path: str) -> str:
     """Import an 18Birdies account-data export (18Birdies_archive.json) into the store."""
-    if not archive_path or not os.path.exists(os.path.expanduser(archive_path)):
+    if not archive_path:
         return "error: give the path to your 18Birdies_archive.json"
-    return _run("pull_18birdies.py", os.path.expanduser(archive_path))
+    if any(ord(ch) < 32 for ch in archive_path):
+        return "error: invalid characters in path"
+    resolved = os.path.realpath(os.path.expanduser(archive_path))
+    home = os.path.realpath(HOME)
+    if not resolved.startswith(home + os.sep):
+        return "error: archive must be a file inside your home directory"
+    if not resolved.endswith(".json"):
+        return "error: expected a .json file (the 18Birdies_archive.json export)"
+    if not os.path.isfile(resolved):
+        return f"error: file not found: {resolved}"
+    return _run("pull_18birdies.py", resolved)
 
 
 @mcp.tool()
