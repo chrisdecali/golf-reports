@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """dispersion.py — low-N empirical-Bayes per-club dispersion model.
 
-Prior carry mean: clubs.csv smart_distance_yd (Arccos's own estimate), else a
-category default. Prior SDs: category fractions of carry (Broadie ESC +
-published amateur dispersion studies, approximate). Evidence: shots.csv GPS
+Prior mean total distance: clubs.csv smart_distance_yd (Arccos's own estimate),
+else a category default. Prior SDs: category fractions of total distance (Broadie
+ESC + published amateur dispersion studies, approximate). Evidence: shots.csv GPS
 rows. Posterior = (n*sample + k*prior)/(n+k). Output: <store>/dispersion.json,
 schema v1.0 — the Phase 4 golfsmart contract; aggregates only, no coordinates.
+
+NB: distances are GPS total (carry+roll); Arccos does not isolate carry.
 """
 from __future__ import annotations
 
@@ -19,7 +21,7 @@ from typing import Optional
 
 _SD_PRIOR = {"driver": (0.055, 0.07), "wood": (0.055, 0.06),
              "hybrid": (0.05, 0.06), "iron": (0.05, 0.05), "wedge": (0.06, 0.04)}
-_CARRY_DEFAULT = {"driver": 230, "wood": 205, "hybrid": 190, "iron": 155, "wedge": 100}
+_DIST_DEFAULT = {"driver": 230, "wood": 205, "hybrid": 190, "iron": 155, "wedge": 100}
 _K_CARRY, _K_LATERAL = 15, 25
 _YD_PER_DEG_LAT = 121_000.0  # ~ 111.32 km in yards
 
@@ -69,6 +71,8 @@ def _shrink(sample_mean: Optional[float], n: int, prior: float, k: int) -> tuple
 
 def _guess_category(club: str) -> str:
     c = (club or "").lower()
+    if "putter" in c:
+        return "putter"
     if "driver" in c:
         return "driver"
     if "wood" in c:
@@ -90,18 +94,19 @@ def build(store: str) -> dict:
                  (_f(h.get("pin_lat")), _f(h.get("pin_lng")))
                  for h in _read(store, "holes.csv")}
 
-    carries: dict[str, list[float]] = {}
+    dists: dict[str, list[float]] = {}
     laterals: dict[str, list[float]] = {}
 
-    # Single pass: gather carry samples and lateral samples for each club.
+    # Single pass: gather total-distance samples and lateral samples for each club.
     for s in shots:
         club = s.get("club")
         if not club or club == "Putter" or s.get("is_putt") == "1":
             continue
+        # recovery/sand lies produce abnormally short distances — not representative
         if s.get("lie_approx") not in ("recovery", "sand"):
             d = _f(s.get("shot_distance_yd"))
             if d and d > 10:
-                carries.setdefault(club, []).append(d)
+                dists.setdefault(club, []).append(d)
         pin = holes_pin.get((s.get("round_id"), s.get("hole_id")))
         start = (_f(s.get("start_lat")), _f(s.get("start_lng")))
         end = (_f(s.get("end_lat")), _f(s.get("end_lng")))
@@ -112,33 +117,35 @@ def build(store: str) -> dict:
             if lat is not None:
                 laterals.setdefault(club, []).append(lat)
 
-    all_clubs = sorted((set(clubs_meta) | set(carries) | set(laterals)) - {None, ""})
+    all_clubs = sorted((set(clubs_meta) | set(dists) | set(laterals)) - {None, ""})
     out_clubs = []
     for club in all_clubs:
         meta = clubs_meta.get(club, {})
         cat = (meta.get("club_category") or _guess_category(club))
-        prior_carry = _f(meta.get("smart_distance_yd")) or _CARRY_DEFAULT.get(cat, 150)
-        sd_frac_c, sd_frac_l = _SD_PRIOR.get(cat, (0.05, 0.05))
-        cs = carries.get(club, [])
+        if cat == "putter":
+            continue
+        prior_dist = _f(meta.get("smart_distance_yd")) or _DIST_DEFAULT.get(cat, 150)
+        sd_frac_d, sd_frac_l = _SD_PRIOR.get(cat, (0.05, 0.05))
+        ds = dists.get(club, [])
         ls = laterals.get(club, [])
-        carry_mean, w_c = _shrink(statistics.fmean(cs) if cs else None,
-                                  len(cs), prior_carry, _K_CARRY)
-        prior_csd = prior_carry * sd_frac_c
-        sample_csd = statistics.stdev(cs) if len(cs) >= 2 else None
-        carry_sd, _ = _shrink(sample_csd, max(len(cs) - 1, 0), prior_csd, _K_CARRY)
-        prior_lsd = carry_mean * sd_frac_l
-        # lateral samples are |deviation|; sd of signed dev ~ rms of abs (half-normal)
+        dist_mean, w_d = _shrink(statistics.fmean(ds) if ds else None,
+                                 len(ds), prior_dist, _K_CARRY)
+        prior_dsd = prior_dist * sd_frac_d
+        sample_dsd = statistics.stdev(ds) if len(ds) >= 2 else None
+        dist_sd, _ = _shrink(sample_dsd, max(len(ds) - 1, 0), prior_dsd, _K_CARRY)
+        prior_lsd = dist_mean * sd_frac_l
+        # lateral samples are |deviation|; under half-normal, rms(|X|) = sigma exactly
         sample_lsd = (math.sqrt(statistics.fmean([v * v for v in ls]))
                       if len(ls) >= 2 else None)
         lat_sd, w_l = _shrink(sample_lsd, len(ls), prior_lsd, _K_LATERAL)
-        n_evidence = max(len(cs), len(ls))
+        n_evidence = max(len(ds), len(ls))
         out_clubs.append({
             "club": club, "category": cat,
-            "carry_yd": {"mean": round(carry_mean, 1), "sd": round(carry_sd, 1),
-                         "n": len(cs), "source_weight": w_c},
+            "total_yd": {"mean": round(dist_mean, 1), "sd": round(dist_sd, 1),
+                         "n": len(ds), "source_weight": w_d},
             "lateral_yd": {"sd": round(lat_sd, 1), "n": len(ls),
                            "source_weight": w_l},
-            "usage_count": int(_f(meta.get("usage_count")) or 0) or len(cs),
+            "usage_count": int(_f(meta.get("usage_count")) or 0) or len(ds),
             "confidence": _confidence(n_evidence)})
 
     ghin = {}

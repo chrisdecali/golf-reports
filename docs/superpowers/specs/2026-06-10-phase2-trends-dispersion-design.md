@@ -65,14 +65,16 @@ from index math (still in scoring trends).
 
 The Phase 4 bridge artifact. Empirical-Bayes per club:
 
-- **Prior mean carry**: `clubs.csv` `smart_distance_yd` (Arccos's own estimate).
-  Clubs absent from clubs.csv: category default table (documented constants).
-- **Prior SDs** as fraction of carry (documented constants, cite source comment):
-  driver lateral 7%, fairway/hybrid 6%, mid-iron 5%, wedge 4%; carry SD:
-  driver 5.5%, irons 5%, wedges 6%.
-- **Evidence** from `shots.csv` (GPS rows only): per-club carry samples
+- **Prior mean total distance**: `clubs.csv` `smart_distance_yd` (Arccos's own
+  estimate). Clubs absent from clubs.csv: category default table (documented
+  constants). Distances are GPS total (carry+roll) — field named `total_yd` for
+  honesty; Arccos does not isolate carry.
+- **Prior SDs** as fraction of total distance (documented constants, cite source
+  comment): driver lateral 7%, fairway/hybrid 6%, mid-iron 5%, wedge 4%;
+  distance SD: driver 5.5%, irons 5%, wedges 6%.
+- **Evidence** from `shots.csv` (GPS rows only): per-club total-distance samples
   (`shot_distance_yd` for full swings — exclude putts, exclude
-  `lie_approx in ("recovery","sand")` rows from carry stats); lateral deviation
+  `lie_approx in ("recovery","sand")` rows from distance stats); lateral deviation
   = perpendicular distance of shot end-point from the start→pin line (approach
   + tee shots with all five coordinates present).
 - **Shrinkage**: posterior_mean = (n·x̄ + k·prior)/(n+k) with k_carry=15,
@@ -87,7 +89,7 @@ The Phase 4 bridge artifact. Empirical-Bayes per club:
   "player": {"hcp_index": 21.3, "rounds_with_gps": 1},
   "clubs": [
     {"club": "7 Iron", "category": "iron",
-     "carry_yd": {"mean": 158.2, "sd": 8.1, "n": 3, "source_weight": 0.17},
+     "total_yd": {"mean": 158.2, "sd": 8.1, "n": 3, "source_weight": 0.17},
      "lateral_yd": {"sd": 7.9, "n": 2, "source_weight": 0.07},
      "usage_count": 7, "confidence": "low"}
   ]
