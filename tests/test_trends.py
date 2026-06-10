@@ -31,3 +31,34 @@ def test_normalize_course():
     n = trends._norm_course
     assert n("WindRose Golf Club") == n("Wind Rose GC") == "windrose"
     assert n("Forest") == n("Forest Golf Course")
+
+
+def test_whs_index_small_counts():
+    # 3 diffs -> lowest 1, -2.0
+    assert trends._whs_index([20.0, 25.0, 30.0]) == 18.0
+    # 6 diffs -> avg lowest 2, -1.0
+    assert trends._whs_index([18.0, 20.0, 25.0, 26.0, 27.0, 28.0]) == 18.0
+    # <3 -> None
+    assert trends._whs_index([20.0, 21.0]) is None
+
+
+def test_whs_index_full_twenty():
+    diffs = [float(d) for d in range(10, 30)]   # 10..29, lowest 8 = 10..17
+    assert trends._whs_index(diffs) == 13.5
+    # only most-recent 20 count: prepend an ancient great score, list ordered oldest->newest
+    assert trends._whs_index([1.0] + diffs) == 13.5
+
+
+def test_trends_blocks(store):
+    t = trends.trends(store)
+    assert t["scoring"]["n"] == 8                     # 9 rows minus one 9-holer
+    assert t["handicap"]["index"] is not None
+    assert t["sg_trends"] is not None                 # fixture has 2 arccos rounds
+    assert t["sg_trends"]["n"] == 2
+    assert t["rounds_total"] == 9
+
+
+def test_compare_rounds(store):
+    c = trends.compare_rounds(store, "r1", "r2")
+    assert c["sg_delta"]["total"] == -0.9             # r2 -3.0 vs r1 -2.1
+    assert c["biggest_swing"]["category"] in ("off_tee", "approach", "short", "putting")
