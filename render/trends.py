@@ -123,9 +123,9 @@ def _roll(vals: list, n: int) -> Optional[float]:
     return round(sum(sel) / len(sel), 1) if sel else None
 
 
-def trends(store: str, window: int = 10) -> dict:
+def trends(store: str) -> dict:
     rows = history(store)
-    full = [r for r in rows if (r["holes"] or 18) != 9]
+    full = [r for r in rows if (r["holes"] or 18) >= 18]
     gross = [r["gross"] for r in full]
     out: dict = {"rounds_total": len(rows)}
     out["scoring"] = {"n": len([g for g in gross if g is not None]),
