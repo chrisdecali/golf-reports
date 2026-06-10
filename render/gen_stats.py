@@ -9,6 +9,7 @@ import os
 from typing import Optional
 
 import gen_combined as gc
+from gen_combined import _esc, _pm
 
 
 def _html(d: dict) -> str:
@@ -19,14 +20,14 @@ def _html(d: dict) -> str:
                            if v is not None else
                            f'<div class="card"><div class="lab">{lab}</div><div class="val">—</div></div>')
     holes = "".join(f"<tr><td>{h['hole_id']}</td><td>{h['par']}</td><td>{h['shots']}</td>"
-                    f"<td>{h['score_to_par']:+d}</td><td>{h['putts']}</td>"
+                    f"<td>{_pm(h['score_to_par'])}</td><td>{h['putts']}</td>"
                     f"<td>{'✓' if h['fairway_hit'] else ''}</td><td>{'✓' if h['gir'] else ''}</td>"
                     f"<td>{h['sg_hole'] if h['sg_hole'] is not None else ''}</td></tr>"
                     for h in d["holes"])
-    peer = "".join(f"<tr><td>{p['club']}</td><td>{p['you_yd']:.0f}</td><td>{p['peer_yd']}</td>"
+    peer = "".join(f"<tr><td>{_esc(p['club'])}</td><td>{p['you_yd']:.0f}</td><td>{p['peer_yd']}</td>"
                    f"<td class=\"{'pos' if p['delta_yd']>=0 else 'neg'}\">{p['delta_yd']:+.0f}</td></tr>"
                    for p in d["peer_carry"])
-    return f"""<!doctype html><html><head><meta charset="utf-8"><title>{d['course']} stats</title>
+    return f"""<!doctype html><html><head><meta charset="utf-8"><title>{_esc(d['course'])} stats</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>body{{font:15px/1.5 system-ui;margin:0;background:#0f1115;color:#e7e9ee}}
@@ -36,7 +37,7 @@ def _html(d: dict) -> str:
 .pos{{color:#56d364}}.neg{{color:#f08c8c}}table{{border-collapse:collapse;width:100%;font-size:13px;margin:10px 0}}
 th,td{{border-bottom:1px solid #2a2e37;padding:6px 8px;text-align:right}}th:first-child,td:first-child{{text-align:left}}
 h1{{margin:.2em 0}}.sub{{color:#9aa0aa}}canvas{{max-height:240px}}</style></head><body><div class="wrap">
-<h1>{d['course']} — stats</h1><div class="sub">{d['date']} · {d['score']} ({d['score_to_par']:+d}) · {d['putts']} putts</div>
+<h1>{_esc(d['course'])} — stats</h1><div class="sub">{_esc(d['date'])} · {_esc(d['score'])} ({_pm(d['score_to_par'])}) · {_esc(d['putts'])} putts</div>
 <div class="cards">{card('Total',sg['total'])}{card('Off-tee',sg['off_tee'])}{card('Approach',sg['approach'])}{card('Short',sg['short'])}{card('Putting',sg['putting'])}</div>
 <canvas id="band"></canvas><canvas id="putt"></canvas>
 <table><tr><th>#</th><th>Par</th><th>Shots</th><th>+/-</th><th>Putts</th><th>FW</th><th>GIR</th><th>SG</th></tr>{holes}</table>

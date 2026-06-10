@@ -16,9 +16,11 @@ Read conventions (fixed contract):
 from __future__ import annotations
 
 import csv
+import html as _html_mod
 import json
 import math
 import os
+import re
 from typing import Any, Optional
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -251,14 +253,25 @@ def compute(repo: str, rid: Optional[str] = None) -> dict:
 # gen() — combined satellite + stats HTML
 # ---------------------------------------------------------------------------
 
+def _esc(v) -> str:
+    """HTML-escape any API-sourced value; em-dash for None."""
+    return _html_mod.escape(str(v)) if v is not None else "—"
+
+
+def _pm(v) -> str:
+    """Signed int for display; em-dash when absent."""
+    return f"{v:+d}" if isinstance(v, int) else "—"
+
+
 def _slug(d: dict) -> str:
-    return f"{(d.get('course') or 'round').replace(' ', '_')}_{d.get('date') or d['round_id']}"
+    raw = f"{(d.get('course') or 'round')}_{d.get('date') or d['round_id']}"
+    return re.sub(r"\.\.+", "_", re.sub(r"[^\w\-.]", "_", raw))
 
 
 def _html(d: dict) -> str:
     j = json.dumps  # shorthand
     sg = d["sg"]
-    cond = "  ".join(f"{k}: {v}" for k, v in d["conditions"].items())
+    cond = "  ".join(f"{_esc(k)}: {_esc(v)}" for k, v in d["conditions"].items())
     sg_card = lambda lab, v: (
         f'<div class="card {"pos" if (v or 0) >= 0 else "neg"}">'
         f'<div class="lab">{lab}</div><div class="val">{v:+.1f}</div></div>'
@@ -267,12 +280,12 @@ def _html(d: dict) -> str:
     holes_rows = "".join(
         f"<tr><td>{h['hole_id']}</td><td>{h['par']}</td>"
         f"<td>{h['len_yd'] or ''}</td><td>{h['shots']}</td>"
-        f"<td>{h['score_to_par']:+d}</td><td>{h['putts']}</td>"
+        f"<td>{_pm(h['score_to_par'])}</td><td>{h['putts']}</td>"
         f"<td>{'✓' if h['fairway_hit'] else ''}</td><td>{'✓' if h['gir'] else ''}</td>"
         f"<td>{(h['sg_hole'] if h['sg_hole'] is not None else '')}</td></tr>"
         for h in d["holes"])
     peer_rows = "".join(
-        f"<tr><td>{p['club']}</td><td>{p['you_yd']:.0f}</td><td>{p['peer_yd']}</td>"
+        f"<tr><td>{_esc(p['club'])}</td><td>{p['you_yd']:.0f}</td><td>{p['peer_yd']}</td>"
         f"<td class=\"{'pos' if p['delta_yd'] >= 0 else 'neg'}\">{p['delta_yd']:+.0f}</td></tr>"
         for p in d["peer_carry"])
     map_block = (
@@ -285,7 +298,7 @@ def _html(d: dict) -> str:
                f"({'✓ match' if chk['ok'] else '⚠ off'})") if chk else ""
 
     return f"""<!doctype html><html><head><meta charset="utf-8">
-<title>{d['course']} — {d['date']}</title>
+<title>{_esc(d['course'])} — {_esc(d['date'])}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -307,9 +320,9 @@ def _html(d: dict) -> str:
  h2{{margin-top:28px;border-bottom:1px solid #2a2e37;padding-bottom:4px}}
  .prov{{color:#6b7280;font-size:12px;margin-top:30px}}
 </style></head><body><div class="wrap">
-<h1>{d['course']}</h1>
-<div class="sub">{d['date']} · {d['tee_name']} ({d['tee_yards']}y) · par {d['par']} ·
- <b>{d['score']}</b> ({d['score_to_par']:+d}) · {d['putts']} putts · {cond}</div>
+<h1>{_esc(d['course'])}</h1>
+<div class="sub">{_esc(d['date'])} · {_esc(d['tee_name'])} ({_esc(d['tee_yards'])}y) · par {_esc(d['par'])} ·
+ <b>{_esc(d['score'])}</b> ({_pm(d['score_to_par'])}) · {_esc(d['putts'])} putts · {cond}</div>
 
 <h2>Strokes Gained (vs scratch)</h2>
 <div class="cards">
@@ -331,7 +344,7 @@ def _html(d: dict) -> str:
 <table><tr><th>#</th><th>Par</th><th>Yds</th><th>Shots</th><th>+/-</th><th>Putts</th>
 <th>FW</th><th>GIR</th><th>SG</th></tr>{holes_rows}</table>
 
-<h2>Carry vs {d['peer_label']}</h2>
+<h2>Carry vs {_esc(d['peer_label'])}</h2>
 <table><tr><th>Club</th><th>You</th><th>Peer</th><th>Δ</th></tr>{peer_rows}</table>
 
 <div class="prov">Source: Arccos (measured SG + GPS), GHIN, 18Birdies. SG-by-band &amp;

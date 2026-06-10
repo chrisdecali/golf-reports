@@ -79,8 +79,9 @@ def gen(repo: str, out: str, rid: Optional[str] = None) -> str:
         # cover
         fig = plt.figure(figsize=(8.5, 2.4))
         fig.text(0.5, 0.6, f"{d['course']} — {d['date']}", ha="center", fontsize=16, weight="bold")
-        fig.text(0.5, 0.32, f"{d['tee_name']} ({d['tee_yards']}y) · par {d['par']} · "
-                            f"{d['score']} ({d['score_to_par']:+d}) · {d['putts']} putts",
+        stp = f"{d['score_to_par']:+d}" if isinstance(d.get("score_to_par"), int) else "—"
+        fig.text(0.5, 0.32, f"{d.get('tee_name') or '?'} ({d.get('tee_yards') or '?'}y) · par {d.get('par') or '?'} · "
+                            f"{d.get('score') or '?'} ({stp}) · {d.get('putts') or '?'} putts",
                  ha="center", fontsize=10)
         pdf.savefig(fig); plt.close(fig)
 
