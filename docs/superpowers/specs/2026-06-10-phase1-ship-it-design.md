@@ -79,7 +79,9 @@ actionable string, never a stack trace.
 
 ---
 
-## Appendix: Phases 2–4 (sketches, own specs later)
+## Appendix: Phases 2–4 (sketches)
+
+> **Amended 2026-06-10:** Phase 2 shipped (descoped Monte Carlo). Phases 3 (Trackman) and 4 (golfsmart bridge) CUT per Cole — no sim-bay data exists; golfsmart integration not a requirement. dispersion.json remains a standalone artifact.
 
 **Phase 2 — Trends + what-if.** `trends.py` rolling SG by category; MCP tools
 `trends`, `compare_rounds`. Keystone artifact: `dispersion.json` — per-club
