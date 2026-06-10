@@ -48,11 +48,26 @@ def main() -> None:
         pw = getpass.getpass("  GHIN password: ")
         tok, gid = pg.ghin_login(em, pw)
         if tok:
+            meta = {"email": em, "ghin_id": gid}
+            stored = ""
+            try:
+                import keyring
+                keyring.set_password("golf-reports-ghin", em, pw)
+                meta["password_in_keyring"] = True
+                stored = "password in OS keychain"
+            except Exception:
+                if _yes("  No OS keychain available. GHIN needs the password each sync "
+                        "(12h tokens, no refresh). Store it in ~/.ghin_creds.json, "
+                        "chmod 600, plaintext? [Y/n] "):
+                    meta["password"] = pw
+                    stored = "password in ~/.ghin_creds.json (plaintext, chmod 600)"
+                else:
+                    stored = "password NOT stored — set GHIN_PASSWORD env or re-run setup before syncing"
             p = os.path.expanduser("~/.ghin_creds.json")
             with open(p, "w", encoding="utf-8") as f:
-                json.dump({"email": em, "password": pw, "ghin_id": gid}, f)
+                json.dump(meta, f)
             os.chmod(p, 0o600)
-            print(f"  ✓ GHIN linked (index {tok and 'fetched'}).\n")
+            print(f"  ✓ GHIN linked ({stored}).\n")
         else:
             print("  ✗ GHIN login failed — check email/password.\n")
 

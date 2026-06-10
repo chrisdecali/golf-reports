@@ -1,3 +1,4 @@
 mcp>=1.0
 matplotlib>=3.7
+keyring>=24
 # dev/test: pip install pytest

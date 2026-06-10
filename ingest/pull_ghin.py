@@ -120,6 +120,12 @@ def load_creds() -> tuple[str, str]:
         ghin = ghin or c.get("ghin_id") or c.get("ghin") or c.get("golfer_id")
         email = email or c.get("email") or c.get("email_or_ghin") or c.get("username")
         password = password or c.get("password")
+        if email and not password:
+            try:
+                import keyring  # optional; OS keychain
+                password = keyring.get_password("golf-reports-ghin", email)
+            except Exception:
+                password = None
     if token:
         token = token.strip()
         for pre in ("Bearer:", "Bearer"):
