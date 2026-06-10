@@ -23,10 +23,10 @@ ARCHITECTURE
   --discover : dump raw endpoint structure.
   default : --fetch then --build.
 
-OUTPUTS (./arccos_out/, no GPS/PII, safe for a public repo):
+OUTPUTS (./arccos_out/, GPS excluded by default — enable with --include-gps):
   rounds_summary.csv      one row per round (scoring, GIR/FW/scramble, SG categories)
   holes.csv               one row per hole (par calibrated, proximity, SG)
-  shots.csv               one row per shot (club, distances-to-pin, lie, SG) — NO coords
+  shots.csv               one row per shot (club, distances-to-pin, lie, SG; lat/lng only with --include-gps)
   clubs.csv               per-club smart distance, terrain splits, GIR%, dispersion
   handicap_history.csv    per-round Arccos category handicaps
   player_profile.json     redacted profile + bag + subscription + home course
@@ -64,6 +64,16 @@ DISCOVERY_DIR = os.path.join(OUT_DIR, "_discovery")  # gitignored
 
 _HEADER_FORMS = ["Bearer: {tok}", "Bearer {tok}"]    # nonstandard colon form first
 REQUEST_DELAY_S = 0.5
+# GPS columns are PRIVACY-SENSITIVE (home course location). Excluded from the
+# public CSVs unless explicitly enabled (env GOLF_INCLUDE_GPS=1 or --include-gps).
+INCLUDE_GPS = os.environ.get("GOLF_INCLUDE_GPS", "").lower() in ("1", "true", "yes")
+GPS_COLS = {"start_lat", "start_lng", "end_lat", "end_lng", "pin_lat", "pin_lng"}
+
+
+def public_cols(cols: list[str]) -> list[str]:
+    return list(cols) if INCLUDE_GPS else [c for c in cols if c not in GPS_COLS]
+
+
 YD_PER_M = 1.0936132983
 
 # Confirmed-working endpoints (recon 2026-06-06). {u}=user id, {r}=round, {c}=course.
@@ -903,8 +913,8 @@ def build(pulled_at: str) -> dict:
     shot_rows.sort(key=lambda r: (r.get("date") or "", r.get("round_id"), r.get("hole_id"), r.get("shot_num")))
 
     write_csv(os.path.join(OUT_DIR, "rounds_summary.csv"), ROUND_COLS, round_rows)
-    write_csv(os.path.join(OUT_DIR, "holes.csv"), HOLE_COLS, hole_rows)
-    write_csv(os.path.join(OUT_DIR, "shots.csv"), SHOT_COLS, shot_rows)
+    write_csv(os.path.join(OUT_DIR, "holes.csv"), public_cols(HOLE_COLS), hole_rows)
+    write_csv(os.path.join(OUT_DIR, "shots.csv"), public_cols(SHOT_COLS), shot_rows)
     club_rows = build_clubs_csv(clubs_raw, clubid_map, meta)
     write_csv(os.path.join(OUT_DIR, "clubs.csv"), CLUB_COLS, club_rows)
     write_csv(os.path.join(OUT_DIR, "handicap_history.csv"), HCP_COLS, hcp_rows)
@@ -957,8 +967,8 @@ def build_xlsx(rounds, holes, shots, clubs, hcps, career, pulled_at, counts):
             ws.column_dimensions[get_column_letter(i)].width = max(10, min(30, len(col) + 2))
 
     tab(wb.active, ROUND_COLS, rounds, "Rounds")
-    tab(wb.create_sheet(), HOLE_COLS, holes, "Holes")
-    tab(wb.create_sheet(), SHOT_COLS, shots, "Shots")
+    tab(wb.create_sheet(), public_cols(HOLE_COLS), holes, "Holes")
+    tab(wb.create_sheet(), public_cols(SHOT_COLS), shots, "Shots")
     tab(wb.create_sheet(), CLUB_COLS, clubs, "Clubs")
     tab(wb.create_sheet(), HCP_COLS, hcps, "Handicap History")
 
@@ -1103,7 +1113,13 @@ def main():
     p.add_argument("--after", type=str, default=None, help="Only rounds on/after YYYY-MM-DD.")
     p.add_argument("--login", action="store_true",
                    help="One-time email/password login -> stores accessKey (no DevTools).")
+    p.add_argument("--include-gps", action="store_true",
+                   help="include lat/lng columns in shots.csv/holes.csv (privacy-sensitive)")
     args = p.parse_args()
+
+    global INCLUDE_GPS
+    if args.include_gps:
+        INCLUDE_GPS = True
 
     if args.login:
         interactive_login()
