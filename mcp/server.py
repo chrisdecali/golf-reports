@@ -36,6 +36,8 @@ sys.path.insert(0, os.path.abspath(RENDER_DIR))
 
 import gen_combined as gc      # noqa: E402
 import gen_gps_pdf             # noqa: E402
+import trends as trends_mod    # noqa: E402
+import dispersion as dispersion_mod  # noqa: E402
 
 from mcp.server.fastmcp import FastMCP  # noqa: E402
 
@@ -191,6 +193,35 @@ def logout() -> str:
             os.remove(p)
             removed.append(os.path.basename(p))
     return "removed: " + (", ".join(removed) if removed else "nothing")
+
+
+@mcp.tool()
+def trends() -> dict:
+    """Scoring/handicap/stat trends across ALL sources (Arccos + GHIN +
+    18Birdies): rolling scoring averages, WHS index + trajectory + projection,
+    SG-category trends (needs >=2 Arccos rounds). Call after syncs. Lead with
+    the worst SG category when the user asks where they're losing strokes."""
+    return trends_mod.trends(STORE)
+
+
+@mcp.tool()
+def compare_rounds(round_id_a: str, round_id_b: str) -> dict:
+    """Compare two Arccos rounds: SG deltas by category, score/putts deltas,
+    biggest swing."""
+    return trends_mod.compare_rounds(STORE, round_id_a, round_id_b)
+
+
+@mcp.tool()
+def export_dispersion() -> dict:
+    """(Re)generate <store>/dispersion.json — per-club total-distance/lateral
+    model (schema v1.0, golfsmart bridge artifact; distances are GPS total,
+    carry+roll). Check per-club `confidence` and `source_weight` — low/small
+    means prior-dominated, caveat accordingly."""
+    path = dispersion_mod.write(STORE)
+    with open(path, encoding="utf-8") as f:
+        d = json.load(f)
+    return {"path": path, "clubs": len(d["clubs"]),
+            "rounds_with_gps": d["player"]["rounds_with_gps"]}
 
 
 if __name__ == "__main__":

@@ -22,6 +22,12 @@ file wrangling. (It runs locally because the cloud sandbox can't reach the golf 
 - `sync_arccos` / `sync_ghin` — pull the latest data first if the user asks about
   recent rounds. `import_18birdies(archive_path)` — load an 18Birdies export.
 - `logout` — delete stored credentials.
+- `trends` — scoring averages (5/10/20), official WHS index + trajectory +
+  projection, putts/GIR/FW trends, SG-category trends (needs ≥2 Arccos rounds).
+  All sources merged (Arccos + GHIN + 18Birdies import).
+- `compare_rounds(a, b)` — SG/stat deltas between two Arccos rounds.
+- `export_dispersion` — regenerate `dispersion.json` (per-club total-distance +
+  lateral model; the golfsmart bridge artifact).
 
 ## Typical flows
 
@@ -48,3 +54,10 @@ file wrangling. (It runs locally because the cloud sandbox can't reach the golf 
 
 If the user hasn't said otherwise, weight **short game / chipping** — it's the common
 leak. Surface scramble %, chip/sand saves, SG short, and around-the-green proximity.
+
+- Dispersion + early trends are **prior-blended**: check `confidence` /
+  `source_weight` (dispersion) and `n` (trends blocks). Low n or low weight ⇒
+  say "early estimate", never present as measured fact. `total_yd` is GPS
+  total distance (carry + roll), not carry.
+- Typical flow for "where am I losing strokes?": `trends` → worst SG category →
+  `compare_rounds` on recent rounds for specifics.

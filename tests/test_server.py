@@ -114,3 +114,16 @@ def test_logout_clears_keyring_entry(store, tmp_path, monkeypatch):
     assert deleted["k"] == ("golf-reports-ghin", "a@b.c")
     assert "keychain entry" in out and ".ghin_creds.json" in out
     assert not (tmp_path / ".ghin_creds.json").exists()
+
+
+def test_new_analysis_tools(store, monkeypatch):
+    monkeypatch.setenv("GOLF_STORE", store)
+    server = _load_server()
+    assert server.trends()["rounds_total"] == 9
+    c = server.compare_rounds("r1", "r2")
+    assert c["sg_delta"]["total"] == -0.9
+    res = server.export_dispersion()
+    assert "dispersion.json" in res["path"]
+    import os as _os
+    assert _os.path.exists(res["path"])
+    assert res["clubs"] >= 1

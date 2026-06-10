@@ -95,9 +95,7 @@ def send_telegram(text: str) -> bool:
         return bool(json.load(r).get("ok"))
 
 
-def main() -> int:
-    store = os.path.abspath(os.path.expanduser(
-        sys.argv[1] if len(sys.argv) > 1 else "~/arccos_out"))
+def main_for_store(store: str) -> int:
     for rid in detect_new(store):
         try:
             reports = os.path.join(store, "reports")
@@ -110,7 +108,18 @@ def main() -> int:
             print(f"[alert] telegram sent: {send_telegram(msg)} for {rid}")
         except Exception as e:  # alerting must never fail the sync
             print(f"[alert] alert failed for {rid}: {e}", file=sys.stderr)
+    try:
+        import dispersion as _disp
+        _disp.write(store)
+    except Exception as e:  # never fail the sync
+        print(f"[alert] dispersion regen failed: {e}", file=sys.stderr)
     return 0
+
+
+def main() -> int:
+    store = os.path.abspath(os.path.expanduser(
+        sys.argv[1] if len(sys.argv) > 1 else "~/arccos_out"))
+    return main_for_store(store)
 
 
 if __name__ == "__main__":

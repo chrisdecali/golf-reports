@@ -28,3 +28,13 @@ def test_build_message_contains_essentials(store):
     msg = pra.build_message(store, "r2")
     assert "Wind Rose GC" in msg and "10" in msg
     assert "SG" in msg
+
+
+def test_alert_regenerates_dispersion(store, monkeypatch):
+    import os
+    pra.detect_new(store)                      # baseline
+    with open(os.path.join(store, "rounds_summary.csv"), "a", newline="") as f:
+        f.write("r4,2026-06-11,Wind Rose GC,Blue,6400,,,18,9,8,1,4,,50.0,100.0,0.0,-1.0,-0.2,-0.4,-0.2,-0.2\n")
+    monkeypatch.setattr(pra, "send_telegram", lambda text: True)
+    pra.main_for_store(store)
+    assert os.path.exists(os.path.join(store, "dispersion.json"))

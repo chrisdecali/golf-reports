@@ -27,7 +27,10 @@
     { "name": "sync_arccos", "description": "Pull the latest Arccos rounds into the local store." },
     { "name": "sync_ghin", "description": "Pull the official GHIN handicap + scores." },
     { "name": "import_18birdies", "description": "Import an 18Birdies account-data export." },
-    { "name": "logout", "description": "Delete stored credentials from this machine." }
+    { "name": "logout", "description": "Delete stored credentials from this machine." },
+    { "name": "trends", "description": "Rolling scoring averages, WHS index + trajectory, SG-category trends across all sources." },
+    { "name": "compare_rounds", "description": "Compare two Arccos rounds: SG deltas by category, score/putts deltas, biggest swing." },
+    { "name": "export_dispersion", "description": "Regenerate dispersion.json — per-club total-distance/lateral model (golfsmart bridge artifact)." }
   ],
   "user_config": {
     "GOLF_STORE": {
