@@ -73,6 +73,12 @@ def test_compare_rounds(store):
     assert c["biggest_swing"]["category"] in ("off_tee", "approach", "short", "putting")
 
 
+def test_compare_rounds_unknown_id_returns_error(store):
+    c = trends.compare_rounds(store, "r1", "nope")
+    assert c["error"].startswith("round not found")
+    assert "r1" in c["available"]
+
+
 def test_trajectory_and_projection(store, tmp_path):
     import csv as _csv
     import os, shutil

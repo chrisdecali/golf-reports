@@ -121,14 +121,14 @@ Category-level simulation (hole-level deferred until real multi-round GPS):
 
 ## 5. MCP server + skill
 
-- New tools: `trends`, `compare_rounds`, `what_if`, `export_dispersion`
-  (server.py imports trends/dispersion/simulate from render dir — same pattern
-  as gen_combined).
-- `skills/golf-reports/SKILL.md`: document the four tools, when to call them,
+- New tools: `trends`, `compare_rounds`, `export_dispersion`
+  (server.py imports trends/dispersion from render dir — same pattern
+  as gen_combined). `what_if`/simulate descoped (see section 4 amendment).
+- `skills/golf-reports/SKILL.md`: document the three tools, when to call them,
   and interpretation guidance — explicitly: confidence "low" / high
   `prior_weight` ⇒ caveat the numbers; never present prior-dominated dispersion
   as measured fact.
-- `manifest.json` + `.claude-plugin/plugin.json` tool lists updated (12 tools).
+- `manifest.json` + `.claude-plugin/plugin.json` tool lists updated (11 tools).
 
 ## 6. Tests (extend Phase 1 harness; ~12 new)
 
@@ -138,8 +138,7 @@ overlapping). Cover: merge+dedupe priority, differential attachment, WHS best-8
 -of-20 + reduced-count table, rolling trend windows, sg_trends gating (<2
 arccos), dispersion shrinkage limits (n=0 → prior exactly; large synthetic n →
 sample stats), lateral geometry on a constructed shot line, dispersion.json
-schema validation, what_if determinism (seeded) + monotonicity (gain>0 ⇒ mean
-score strictly lower) + ROI ranking shape, export_dispersion MCP round-trip.
+schema validation, export_dispersion MCP round-trip.
 
 ## Non-goals (this phase)
 

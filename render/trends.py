@@ -167,7 +167,9 @@ def compare_rounds(store: str, rid_a: str, rid_b: str) -> dict:
     arc = {str(r.get("round_id")): r for r in _read(store, "rounds_summary.csv")}
     a, b = arc.get(str(rid_a)), arc.get(str(rid_b))
     if not a or not b:
-        raise SystemExit(f"round not found: {rid_a if not a else rid_b}")
+        missing = rid_a if not a else rid_b
+        return {"error": f"round not found: {missing}",
+                "available": sorted(arc.keys())}
     cats = ("total", "off_tee", "approach", "short", "putting")
     sg_delta = {}
     for c in cats:
