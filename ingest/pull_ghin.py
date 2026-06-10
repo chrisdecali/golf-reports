@@ -158,8 +158,9 @@ def ghin_get(path: str, token: str, params: Optional[dict] = None, soft: bool = 
             return json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         if e.code == 401:
-            sys.exit("Error: 401 Unauthorized — GHIN token expired (they last ~12h). "
-                     "Re-copy the Bearer from GHIN.com DevTools.")
+            sys.exit("Error: 401 Unauthorized — GHIN session rejected. "
+                     "If you set up with email/password: re-run setup.py (password may have changed). "
+                     "If you pasted a manual bearer_token: it expires ~12h — paste a fresh one.")
         if soft:
             print(f"  {path} -> HTTP {e.code}", file=sys.stderr)
             return None
