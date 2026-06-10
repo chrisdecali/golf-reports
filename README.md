@@ -13,11 +13,15 @@ works inside the Claude **Desktop app** (Chat / Cowork / Code) via a local MCP s
 ```
 ingest/    pull_arccos.py · pull_ghin.py · pull_18birdies.py   (login-based, no DevTools)
 render/    gen_combined · gen_stats · gen_satellite · gen_gps_pdf · build_round_pages
-mcp/       server.py        (MCP tools: list_rounds, round_stats, render_round, sync_*, …)
+           trends.py      (MCP tool: unified Arccos+GHIN+18Birdies history, WHS index + trajectory)
+           dispersion.py  (MCP tool: per-club distance/lateral model → <store>/dispersion.json)
+mcp/       server.py        (MCP tools: list_rounds, round_stats, render_round, sync_*, …
+                             trends, compare_rounds, export_dispersion)
 skills/    golf-reports/SKILL.md
 setup.py   one-time login wizard
 manifest.json / .claude-plugin/plugin.json   packaging
 ```
+`export_dispersion` writes `<store>/dispersion.json` — an empirical-Bayes per-club total-distance and lateral-dispersion model (schema v1.0) used as the golfsmart bridge artifact.
 
 ## 1. One-time setup (no DevTools)
 ```bash
