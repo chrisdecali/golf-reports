@@ -5,10 +5,17 @@ out/
 reports/
 golf-data/
 *_creds.json
-*creds*
 *.env
 *.log
 __pycache__/
 *.pyc
 *.tmp
 .sync.lock
+
+# Data/output artifacts (never code-repo content)
+_cache*/
+maps/
+arccos_out/
+*.xlsx
+*.html
+*.pdf
