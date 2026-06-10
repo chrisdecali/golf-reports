@@ -337,11 +337,13 @@ def build_profile(prof: Any) -> dict:
 
 
 def write_csv(path: str, cols: list[str], rows: list[dict]) -> None:
-    with open(path, "w", newline="", encoding="utf-8") as f:
+    tmp = path + ".tmp"
+    with open(tmp, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
         w.writeheader()
         for r in rows:
             w.writerow({k: ("" if r.get(k) is None else r.get(k)) for k in cols})
+    os.replace(tmp, path)
 
 
 def build(data: dict) -> dict:
@@ -351,8 +353,11 @@ def build(data: dict) -> dict:
     prof = build_profile(data.get("profile"))
     write_csv(os.path.join(OUT_DIR, "ghin_scores.csv"), SCORE_COLS, scores)
     write_csv(os.path.join(OUT_DIR, "ghin_handicap_history.csv"), HIST_COLS, hist)
-    with open(os.path.join(OUT_DIR, "ghin_profile.json"), "w", encoding="utf-8") as f:
+    profile_path = os.path.join(OUT_DIR, "ghin_profile.json")
+    tmp = profile_path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(prof, f, indent=2)
+    os.replace(tmp, profile_path)
     return {"scores": len(scores), "revisions": len(hist), "index": prof.get("handicap_index")}
 
 
