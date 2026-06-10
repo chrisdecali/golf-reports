@@ -10,12 +10,21 @@ def test_history_merges_three_sources(store):
     # 2026-06-08 arccos r2 == GHIN g3 (windrose) -> one row (arccos wins)
     # 2026-05-02 18B b5 (windrose) vs 2026-05-03 GHIN g1 (forest): different -> keep both
     assert len(rows) == 9
-    by_date = {r["date"]: r for r in rows}
-    assert by_date["2026-06-08"]["source"] == "arccos"
-    assert by_date["2026-06-08"]["differential"] == 23.1   # attached from GHIN
-    assert by_date["2026-06-01"]["source"] in ("18birdies", "arccos")
-    win_61 = [r for r in rows if r["date"] == "2026-06-01"]
-    assert any(r["differential"] == 21.3 for r in win_61)  # GHIN diff survived
+
+    # 2026-06-08: single row, arccos wins, GHIN differential attached
+    rows_0608 = [r for r in rows if r["date"] == "2026-06-08"]
+    assert len(rows_0608) == 1
+    assert rows_0608[0]["source"] == "arccos"
+    assert rows_0608[0]["differential"] == 23.1
+
+    # 2026-06-01: two rows remain (arccos r1 + the 18birdies/GHIN merge)
+    # Arccos r1 is a different course so it does NOT collide with the WindRose merge.
+    rows_0601 = [r for r in rows if r["date"] == "2026-06-01"]
+    sources_0601 = {r["source"] for r in rows_0601}
+    assert sources_0601 == {"arccos", "18birdies"}
+    # The 18birdies row (which won over GHIN) carries the GHIN differential
+    b6_row = [r for r in rows_0601 if r["source"] == "18birdies"][0]
+    assert b6_row["differential"] == 21.3
 
 
 def test_history_tolerates_missing_files(store, tmp_path):
@@ -62,3 +71,26 @@ def test_compare_rounds(store):
     c = trends.compare_rounds(store, "r1", "r2")
     assert c["sg_delta"]["total"] == -0.9             # r2 -3.0 vs r1 -2.1
     assert c["biggest_swing"]["category"] in ("off_tee", "approach", "short", "putting")
+
+
+def test_trajectory_and_projection(store, tmp_path):
+    import csv as _csv
+    import os, shutil
+    s = str(tmp_path / "s")
+    shutil.copytree(store, s)
+    # Append 3 GHIN scores with differentials: fixture already has 3 (g1,g2,g3)
+    # -> total 6 differentials after append.
+    with open(os.path.join(s, "ghin_scores.csv"), "a", newline="") as f:
+        w = _csv.writer(f)
+        for i, diff in enumerate(("24.0", "20.0", "19.0")):
+            w.writerow([f"2026-06-{20 + i:02d}", "WindRose Golf Club", "18", "95",
+                        "72.1", "127", diff, f"gx{i}"])
+    t = trends.trends(s)
+    h = t["handicap"]
+    assert h["n_differentials"] == 6
+    # WHS table needs >=3 diffs for a non-None index; first 2 diffs silently produce no point.
+    assert len(h["trajectory"]) == 4
+    # index must equal recomputed value from the same helper
+    diffs = [r["differential"] for r in trends.history(s) if r["differential"] is not None]
+    assert h["index"] == trends._whs_index(diffs)
+    assert h["projected_index"] is not None

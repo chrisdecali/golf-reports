@@ -22,7 +22,7 @@ from typing import Optional
 _SD_PRIOR = {"driver": (0.055, 0.07), "wood": (0.055, 0.06),
              "hybrid": (0.05, 0.06), "iron": (0.05, 0.05), "wedge": (0.06, 0.04)}
 _DIST_DEFAULT = {"driver": 230, "wood": 205, "hybrid": 190, "iron": 155, "wedge": 100}
-_K_CARRY, _K_LATERAL = 15, 25
+_K_DIST, _K_LATERAL = 15, 25
 _YD_PER_DEG_LAT = 121_000.0  # ~ 111.32 km in yards
 
 
@@ -129,10 +129,10 @@ def build(store: str) -> dict:
         ds = dists.get(club, [])
         ls = laterals.get(club, [])
         dist_mean, w_d = _shrink(statistics.fmean(ds) if ds else None,
-                                 len(ds), prior_dist, _K_CARRY)
+                                 len(ds), prior_dist, _K_DIST)
         prior_dsd = prior_dist * sd_frac_d
         sample_dsd = statistics.stdev(ds) if len(ds) >= 2 else None
-        dist_sd, _ = _shrink(sample_dsd, max(len(ds) - 1, 0), prior_dsd, _K_CARRY)
+        dist_sd, _ = _shrink(sample_dsd, max(len(ds) - 1, 0), prior_dsd, _K_DIST)
         prior_lsd = dist_mean * sd_frac_l
         # lateral samples are |deviation|; under half-normal, rms(|X|) = sigma exactly
         sample_lsd = (math.sqrt(statistics.fmean([v * v for v in ls]))

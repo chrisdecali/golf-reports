@@ -99,8 +99,7 @@ def store(tmp_path):
                [{"club": "Driver", "club_category": "driver",
                  "smart_distance_yd": "240", "usage_count": "20"}])
 
-    # 18Birdies history: 6 rounds over 3 months; 2026-06-01 Wind Rose overlaps
-    # Arccos r1 (dedupe case). No rating/slope -> excluded from index math.
+    # 18Birdies history: 6 rounds over 3 months; 2026-06-01 Wind Rose overlaps GHIN g2 (dedupe case — Arccos r1 is a different course and does NOT collide).
     _write_csv(os.path.join(s, "18birdies_rounds.csv"),
                ["date", "course", "holes", "gross", "to_par", "fairways_hit",
                 "fairway_chances", "fairway_pct", "gir", "gir_chances",

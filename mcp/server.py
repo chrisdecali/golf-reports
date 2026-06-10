@@ -13,7 +13,7 @@ Env:
   GOLF_REPORTS output dir for HTML/PDF  (default GOLF_STORE/reports)
 
 Tools: list_rounds, round_stats, render_round, get_report_paths,
-       sync_arccos, sync_ghin, import_18birdies, logout.
+       sync_arccos, sync_ghin, import_18birdies, logout, trends, compare_rounds, export_dispersion.
 """
 
 from __future__ import annotations

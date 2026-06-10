@@ -108,7 +108,7 @@ _WHS_TABLE = [  # (scores_available >=, diffs_used, adjustment)
 
 def _whs_index(diffs: list) -> Optional[float]:
     """Official WHS: best-N of the most recent 20 differentials + adjustment.
-    `diffs` ordered oldest -> newest."""
+    `diffs` ordered oldest -> newest. None values are filtered; count = non-None entries."""
     recent = [d for d in diffs if d is not None][-20:]
     n = len(recent)
     for min_n, used, adj in _WHS_TABLE:
@@ -147,6 +147,7 @@ def trends(store: str) -> dict:
                 traj.append({"date": r["date"], "index": idx})
     recent5 = diffs[-5:]
     projected = None
+    # require >=2 recent diffs for a meaningful trend-based projection
     if diffs and len(recent5) >= 2:
         projected = _whs_index(diffs + [sum(recent5) / len(recent5)] * 5)
     out["handicap"] = {"index": _whs_index(diffs), "n_differentials": len(diffs),
@@ -172,12 +173,14 @@ def compare_rounds(store: str, rid_a: str, rid_b: str) -> dict:
     for c in cats:
         va, vb = _f(a.get(f"sg_{c}_arccos")), _f(b.get(f"sg_{c}_arccos"))
         sg_delta[c] = round(vb - va, 2) if va is not None and vb is not None else None
+    # ties broken by cats order (off_tee first)
     swing = max(((c, v) for c, v in sg_delta.items()
                  if c != "total" and v is not None),
                 key=lambda cv: abs(cv[1]), default=(None, None))
-    stat_delta = {k: ((_i(b.get(k)) - _i(a.get(k)))
-                      if _i(a.get(k)) is not None and _i(b.get(k)) is not None else None)
-                  for k in ("score", "putts")}
+    stat_delta = {}
+    for k in ("score", "putts"):
+        va, vb = _i(a.get(k)), _i(b.get(k))
+        stat_delta[k] = (vb - va) if va is not None and vb is not None else None
     return {"a": {"round_id": rid_a, "date": a.get("date"), "score": _i(a.get("score"))},
             "b": {"round_id": rid_b, "date": b.get("date"), "score": _i(b.get("score"))},
             "sg_delta": sg_delta, "stat_delta": stat_delta,
