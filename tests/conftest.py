@@ -98,4 +98,41 @@ def store(tmp_path):
                ["club", "club_category", "smart_distance_yd", "usage_count"],
                [{"club": "Driver", "club_category": "driver",
                  "smart_distance_yd": "240", "usage_count": "20"}])
+
+    # 18Birdies history: 6 rounds over 3 months; 2026-06-01 Wind Rose overlaps
+    # Arccos r1 (dedupe case). No rating/slope -> excluded from index math.
+    _write_csv(os.path.join(s, "18birdies_rounds.csv"),
+               ["date", "course", "holes", "gross", "to_par", "fairways_hit",
+                "fairway_chances", "fairway_pct", "gir", "gir_chances",
+                "gir_pct", "putts", "round_id"], [
+        {"date": "2026-03-07", "course": "Forest Golf Course", "holes": "18",
+         "gross": "103", "to_par": "31", "putts": "38", "gir": "2",
+         "gir_chances": "18", "gir_pct": "11.1", "round_id": "b1"},
+        {"date": "2026-03-21", "course": "Forest Golf Course", "holes": "18",
+         "gross": "99", "to_par": "27", "putts": "36", "round_id": "b2"},
+        {"date": "2026-04-04", "course": "WindRose Golf Club", "holes": "18",
+         "gross": "101", "to_par": "29", "putts": "35", "round_id": "b3"},
+        {"date": "2026-04-18", "course": "Forest Golf Course", "holes": "9",
+         "gross": "49", "to_par": "13", "round_id": "b4"},
+        {"date": "2026-05-02", "course": "WindRose Golf Club", "holes": "18",
+         "gross": "97", "to_par": "25", "putts": "34", "round_id": "b5"},
+        {"date": "2026-06-01", "course": "Wind Rose Golf Club", "holes": "18",
+         "gross": "95", "to_par": "23", "putts": "33", "round_id": "b6"},
+    ])
+
+    # GHIN: 3 scores; 2026-06-01 WindRose overlaps BOTH Arccos r1 and 18B b6
+    # (richest source must win, differential must survive the merge).
+    _write_csv(os.path.join(s, "ghin_scores.csv"),
+               ["played_at", "course_name", "holes", "adjusted_gross_score",
+                "course_rating", "slope_rating", "differential", "score_id"], [
+        {"played_at": "2026-05-03", "course_name": "Forest", "holes": "18",
+         "adjusted_gross_score": "101", "course_rating": "73.6",
+         "slope_rating": "137", "differential": "22.6", "score_id": "g1"},
+        {"played_at": "2026-06-01", "course_name": "WindRose Golf Club",
+         "holes": "18", "adjusted_gross_score": "96", "course_rating": "72.1",
+         "slope_rating": "127", "differential": "21.3", "score_id": "g2"},
+        {"played_at": "2026-06-08", "course_name": "WindRose Golf Club",
+         "holes": "18", "adjusted_gross_score": "98", "course_rating": "72.1",
+         "slope_rating": "127", "differential": "23.1", "score_id": "g3"},
+    ])
     return s
