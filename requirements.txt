@@ -1,2 +1,3 @@
 mcp>=1.0
 matplotlib>=3.7
+# dev/test: pip install pytest
