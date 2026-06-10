@@ -65,9 +65,11 @@ def main() -> None:
                 else:
                     stored = "password NOT stored — set GHIN_PASSWORD env or re-run setup before syncing"
             p = os.path.expanduser("~/.ghin_creds.json")
-            with open(p, "w", encoding="utf-8") as f:
+            tmp = p + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
                 json.dump(meta, f)
-            os.chmod(p, 0o600)
+            os.chmod(tmp, 0o600)
+            os.replace(tmp, p)
             print(f"  ✓ GHIN linked ({stored}).\n")
         else:
             print("  ✗ GHIN login failed — check email/password.\n")

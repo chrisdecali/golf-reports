@@ -19,6 +19,7 @@ Tools: list_rounds, round_stats, render_round, get_report_paths,
 from __future__ import annotations
 
 import csv
+import json
 import os
 import subprocess
 import sys
@@ -172,9 +173,20 @@ def import_18birdies(archive_path: str) -> str:
 
 @mcp.tool()
 def logout() -> str:
-    """Delete stored Arccos + GHIN credentials from this machine."""
+    """Delete stored Arccos + GHIN credentials from this machine (file + OS keychain)."""
     removed = []
-    for p in (os.path.join(HOME, ".arccos_creds.json"), os.path.join(HOME, ".ghin_creds.json")):
+    ghin_path = os.path.join(HOME, ".ghin_creds.json")
+    if os.path.exists(ghin_path):
+        try:
+            with open(ghin_path, encoding="utf-8") as f:
+                email = json.load(f).get("email")
+            if email:
+                import keyring
+                keyring.delete_password("golf-reports-ghin", email)
+                removed.append("keychain entry")
+        except Exception:
+            pass  # no keyring backend / no stored entry — file removal still proceeds
+    for p in (os.path.join(HOME, ".arccos_creds.json"), ghin_path):
         if os.path.exists(p):
             os.remove(p)
             removed.append(os.path.basename(p))

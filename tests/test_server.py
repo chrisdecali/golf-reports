@@ -97,3 +97,20 @@ def test_sync_cooldown(store, monkeypatch):
     assert msg and "cooldown" in msg          # immediately re-running is blocked
     t["now"] += 601
     assert server._cooldown_left("pull_arccos.py") is None   # expired
+
+
+def test_logout_clears_keyring_entry(store, tmp_path, monkeypatch):
+    import json as _json
+    import sys as _sys
+    import types as _types
+    monkeypatch.setenv("GOLF_STORE", store)
+    server = _load_server()
+    monkeypatch.setattr(server, "HOME", str(tmp_path))
+    (tmp_path / ".ghin_creds.json").write_text(_json.dumps({"email": "a@b.c", "password_in_keyring": True}))
+    deleted = {}
+    fake = _types.SimpleNamespace(delete_password=lambda svc, user: deleted.setdefault("k", (svc, user)))
+    monkeypatch.setitem(_sys.modules, "keyring", fake)
+    out = server.logout()
+    assert deleted["k"] == ("golf-reports-ghin", "a@b.c")
+    assert "keychain entry" in out and ".ghin_creds.json" in out
+    assert not (tmp_path / ".ghin_creds.json").exists()
