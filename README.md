@@ -40,6 +40,7 @@ latest round as a PDF I can send."*
   "command": "python3", "args": ["/ABSOLUTE/PATH/golf-reports/mcp/server.py"],
   "env": { "GOLF_STORE": "/ABSOLUTE/PATH/golf-data",
            "GOLF_INGEST": "/ABSOLUTE/PATH/golf-reports/ingest",
+           "GOLF_REPORTS": "/ABSOLUTE/PATH/golf-data/reports",
            "PYTHONPATH": "/ABSOLUTE/PATH/golf-reports/render" } } } }
 ```
 
@@ -52,6 +53,7 @@ cd render
 python3 build_round_pages.py <store-dir-or-git-url> ./out --all --split
 # -> <course>_<date>_report.html + _shotmaps.pdf (+ _stats.html + _map.html)
 ```
+GPS columns in the store are opt-in when pulling: pass `--include-gps` to `pull_arccos.py` (or set `GOLF_INCLUDE_GPS=1`) if you want shot maps with real coordinates in a store you keep private.
 
 ## Notes & provenance
 - **Strokes gained** (by category / 15-yd band / hole) is **measured** (Arccos, vs
@@ -62,7 +64,7 @@ python3 build_round_pages.py <store-dir-or-git-url> ./out --all --split
   omitted / PDF falls back to a distance schematic).
 - Privacy: credentials, raw data, and reports stay local. Nothing is published.
 
-## Verify on Desktop (do these first — the parts that can't be tested headless)
-1. Install the extension and confirm a tool (e.g. `list_rounds`) appears + runs from the **Cowork** tab on your OS/plan.
-2. From the running MCP server, confirm `sync_arccos`/`sync_ghin` reach the APIs and write files.
-3. On a clean machine **without** developer Python, confirm `matplotlib` PDF generation works after install (bundle an embedded Python / PyInstaller if not — the riskiest packaging step).
+## First-run checklist
+1. Install the extension and confirm a tool (e.g. `list_rounds`) appears + runs from the **Cowork** tab.
+2. Ask Claude to `sync_arccos` / `sync_ghin` and confirm files appear in your store (`~/golf-data` by default).
+3. Ask Claude to `render_round` and open the HTML in a browser — satellite tiles should load.
