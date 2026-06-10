@@ -85,3 +85,15 @@ def test_run_surfaces_stderr_and_tail(store, tmp_path, monkeypatch):
     assert out.startswith("exit 3:")
     assert "line2" in out                      # more than just the last line
     assert "token expired" in out              # stderr included
+
+
+def test_sync_cooldown(store, monkeypatch):
+    monkeypatch.setenv("GOLF_STORE", store)
+    server = _load_server(store)
+    t = {"now": 1000.0}
+    monkeypatch.setattr(server, "time", __import__("types").SimpleNamespace(time=lambda: t["now"]))
+    server._mark_sync("pull_arccos.py")
+    msg = server._cooldown_left("pull_arccos.py")
+    assert msg and "cooldown" in msg          # immediately re-running is blocked
+    t["now"] += 601
+    assert server._cooldown_left("pull_arccos.py") is None   # expired

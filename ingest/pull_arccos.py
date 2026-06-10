@@ -399,9 +399,11 @@ def haversine_yd(lat1, lon1, lat2, lon2) -> Optional[float]:
 # ---------------------------------------------------------------------------
 
 def _save(path: str, obj: Any) -> None:
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(obj, f, indent=2)
+    os.replace(tmp, path)
 
 
 def _load(path: str) -> Any:
@@ -788,11 +790,13 @@ def build_round(summary, detail, tee, hcp, clubid_map, rdash, pulled_at):
 
 
 def write_csv(path, cols, rows):
-    with open(path, "w", newline="", encoding="utf-8") as f:
+    tmp = path + ".tmp"
+    with open(tmp, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
         w.writeheader()
         for r in rows:
             w.writerow({k: ("" if r.get(k) is None else r.get(k)) for k in cols})
+    os.replace(tmp, path)
 
 
 def build_clubs_csv(clubs_raw, clubid_map, meta):

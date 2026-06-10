@@ -195,8 +195,11 @@ def ghin_get(path: str, token: str, params: Optional[dict] = None, soft: bool = 
 
 def _save(name: str, obj: Any) -> None:
     os.makedirs(CACHE, exist_ok=True)
-    with open(os.path.join(CACHE, name), "w", encoding="utf-8") as f:
+    target = os.path.join(CACHE, name)
+    tmp = target + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(obj, f, indent=2)
+    os.replace(tmp, target)
 
 
 def _keys(o: Any) -> Any:

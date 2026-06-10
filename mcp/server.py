@@ -19,9 +19,11 @@ Tools: list_rounds, round_stats, render_round, get_report_paths,
 from __future__ import annotations
 
 import csv
+import fcntl
 import os
 import subprocess
 import sys
+import time
 
 HOME = os.path.expanduser("~")
 STORE = os.environ.get("GOLF_STORE", os.path.join(HOME, "arccos_out"))
@@ -40,22 +42,44 @@ from mcp.server.fastmcp import FastMCP  # noqa: E402
 mcp = FastMCP("golf-reports")
 
 
+_SYNC_COOLDOWN_S = 600
+_last_sync: dict[str, float] = {}
+
+
+def _mark_sync(script: str) -> None:
+    _last_sync[script] = time.time()
+
+
+def _cooldown_left(script: str) -> str | None:
+    left = _SYNC_COOLDOWN_S - (time.time() - _last_sync.get(script, 0))
+    if left > 0:
+        return f"cooldown: {script} ran recently — try again in {int(left)}s (protects the API)"
+    return None
+
+
 def _run(script: str, *args: str, timeout: int = 600) -> str:
     """Run an ingest script with the same Python, cwd=INGEST so OUT_DIR=STORE."""
     path = os.path.join(INGEST, script)
     if not os.path.exists(path):
         return f"error: {script} not found in {INGEST} (set GOLF_INGEST)"
-    try:
-        r = subprocess.run([sys.executable, path, *args], cwd=INGEST,
-                           capture_output=True, text=True, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        return f"error: {script} timed out"
-    out_lines = (r.stdout or "").strip().splitlines()
-    tail = "\n".join(out_lines[-5:])
-    if r.returncode == 0:
-        return "ok: " + (tail or "done")
-    err = (r.stderr or "").strip()[-1000:]
-    return f"exit {r.returncode}: {tail}" + (f"\nstderr: {err}" if err else "")
+    os.makedirs(STORE, exist_ok=True)
+    lock_path = os.path.join(STORE, ".sync.lock")
+    with open(lock_path, "w") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return "error: another sync is already running — wait for it to finish"
+        try:
+            r = subprocess.run([sys.executable, path, *args], cwd=INGEST,
+                               capture_output=True, text=True, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            return f"error: {script} timed out"
+        out_lines = (r.stdout or "").strip().splitlines()
+        tail = "\n".join(out_lines[-5:])
+        if r.returncode == 0:
+            return "ok: " + (tail or "done")
+        err = (r.stderr or "").strip()[-1000:]
+        return f"exit {r.returncode}: {tail}" + (f"\nstderr: {err}" if err else "")
 
 
 @mcp.tool()
@@ -105,13 +129,21 @@ def get_report_paths() -> list[str]:
 def sync_arccos() -> str:
     """Pull the latest Arccos rounds into the local store (auto-login via stored
     accessKey). Run sync first when asked about recent rounds."""
-    return _run("pull_arccos.py")
+    if (cd := _cooldown_left("pull_arccos.py")):
+        return cd
+    out = _run("pull_arccos.py")
+    _mark_sync("pull_arccos.py")
+    return out
 
 
 @mcp.tool()
 def sync_ghin() -> str:
     """Pull the official GHIN handicap + score history into the local store."""
-    return _run("pull_ghin.py")
+    if (cd := _cooldown_left("pull_ghin.py")):
+        return cd
+    out = _run("pull_ghin.py")
+    _mark_sync("pull_ghin.py")
+    return out
 
 
 @mcp.tool()
