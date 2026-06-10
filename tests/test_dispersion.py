@@ -49,6 +49,18 @@ def test_lateral_geometry():
     assert abs(lat - 20.0) < 1.0
 
 
+def test_empty_club_name_in_clubs_csv_ignored(store, tmp_path):
+    import shutil
+    s = str(tmp_path / "s")
+    shutil.copytree(store, s)
+    # append a row with empty club name — should not appear in output
+    with open(os.path.join(s, "clubs.csv"), "a", newline="") as f:
+        f.write(",iron,150,5\n")
+    d = dispersion.build(s)
+    names = [c["club"] for c in d["clubs"]]
+    assert "" not in names and None not in names
+
+
 def test_schema_and_atomic_write(store):
     path = dispersion.write(store)
     assert os.path.basename(path) == "dispersion.json"

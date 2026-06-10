@@ -105,12 +105,14 @@ def build(store: str) -> dict:
         pin = holes_pin.get((s.get("round_id"), s.get("hole_id")))
         start = (_f(s.get("start_lat")), _f(s.get("start_lng")))
         end = (_f(s.get("end_lat")), _f(s.get("end_lng")))
-        if pin and None not in pin and None not in start and None not in end:
+        if (s.get("category_approx") in ("off_tee", "approach")
+                and pin and None not in pin
+                and None not in start and None not in end):
             lat = _lateral_yd(start, end, pin)
             if lat is not None:
                 laterals.setdefault(club, []).append(lat)
 
-    all_clubs = sorted(set(clubs_meta) | set(carries) | set(laterals) - {None, ""})
+    all_clubs = sorted((set(clubs_meta) | set(carries) | set(laterals)) - {None, ""})
     out_clubs = []
     for club in all_clubs:
         meta = clubs_meta.get(club, {})
