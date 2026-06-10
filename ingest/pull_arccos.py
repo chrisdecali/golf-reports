@@ -19,7 +19,7 @@ ARCCOS_USER_ID also work.
 ARCHITECTURE
   --fetch : pull every endpoint into a local cache (_cache_raw/, gitignored —
             contains GPS coords + PII). Round details cached by id => idempotent.
-  --build : (re)build all public outputs from the cache. No GPS/PII leaves here.
+  --build : (re)build all public outputs from the cache (GPS only with --include-gps).
   --discover : dump raw endpoint structure.
   default : --fetch then --build.
 
