@@ -144,6 +144,25 @@ def load_creds() -> tuple[str, str]:
 # HTTP (read-only GET)
 # ---------------------------------------------------------------------------
 
+_RETRY_CODES = (500, 502, 503, 504)
+
+
+def _with_retry(fn, attempts: int = 3, base_delay: float = 2.0):
+    """Retry transient failures (5xx, timeouts, connection drops) with backoff.
+    4xx and other HTTPErrors raise immediately. Duplicated in both pullers on
+    purpose — no shared module, the ~ copies are symlinks (see plan Task 8)."""
+    for i in range(attempts):
+        try:
+            return fn()
+        except urllib.error.HTTPError as e:
+            if e.code not in _RETRY_CODES or i == attempts - 1:
+                raise
+        except (urllib.error.URLError, TimeoutError, OSError):
+            if i == attempts - 1:
+                raise
+        time.sleep(base_delay * (2 ** i))
+
+
 def ghin_get(path: str, token: str, params: Optional[dict] = None, soft: bool = False) -> Any:
     q = dict(params or {})
     q.setdefault("source", "GHINcom")
@@ -152,10 +171,12 @@ def ghin_get(path: str, token: str, params: Optional[dict] = None, soft: bool = 
     req.add_header("Authorization", f"Bearer {token}")
     req.add_header("Content-Type", "application/json")
     req.add_header("User-Agent", UA)
-    try:
-        time.sleep(DELAY_S)
+    def _go():
         with urllib.request.urlopen(req, timeout=25) as r:
             return json.loads(r.read().decode("utf-8"))
+    try:
+        time.sleep(DELAY_S)
+        return _with_retry(_go)
     except urllib.error.HTTPError as e:
         if e.code == 401:
             sys.exit("Error: 401 Unauthorized — GHIN session rejected. "

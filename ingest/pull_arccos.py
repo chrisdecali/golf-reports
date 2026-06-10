@@ -329,6 +329,25 @@ def _request(url: str, token: str, form: str) -> Any:
         return json.loads(resp.read().decode("utf-8"))
 
 
+_RETRY_CODES = (500, 502, 503, 504)
+
+
+def _with_retry(fn, attempts: int = 3, base_delay: float = 2.0):
+    """Retry transient failures (5xx, timeouts, connection drops) with backoff.
+    4xx and other HTTPErrors raise immediately. Duplicated in both pullers on
+    purpose — no shared module, the ~ copies are symlinks (see plan Task 8)."""
+    for i in range(attempts):
+        try:
+            return fn()
+        except urllib.error.HTTPError as e:
+            if e.code not in _RETRY_CODES or i == attempts - 1:
+                raise
+        except (urllib.error.URLError, TimeoutError, OSError):
+            if i == attempts - 1:
+                raise
+        time.sleep(base_delay * (2 ** i))
+
+
 def api_get(path: str, token: str, soft: bool = False) -> Any:
     """GET -> JSON. soft=True returns None on any error instead of exiting."""
     global _working_header_form
@@ -338,7 +357,7 @@ def api_get(path: str, token: str, soft: bool = False) -> Any:
     for form in forms:
         try:
             time.sleep(REQUEST_DELAY_S)
-            data = _request(url, token, form)
+            data = _with_retry(lambda: _request(url, token, form))
             _working_header_form = form
             return data
         except urllib.error.HTTPError as e:
