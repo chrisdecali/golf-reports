@@ -1,7 +1,7 @@
 # golf-reports Phase 2 — Trends, Dispersion, What-if (low-N aware)
 
 **Date:** 2026-06-10
-**Status:** Approved (design review with Cole, 2026-06-10)
+**Status:** Approved (design review with Cole, 2026-06-10). **Amended 2026-06-10: Monte Carlo what-if (section 4) CUT per Cole — descoped before implementation.**
 **Depends on:** Phase 1 (shipped `a9d2a5a`). Phase 4 (golfsmart strategy engine) consumes this phase's `dispersion.json`.
 
 ## Goal
