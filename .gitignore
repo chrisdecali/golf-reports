@@ -10,3 +10,5 @@ golf-data/
 *.log
 __pycache__/
 *.pyc
+*.tmp
+.sync.lock

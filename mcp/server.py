@@ -19,7 +19,6 @@ Tools: list_rounds, round_stats, render_round, get_report_paths,
 from __future__ import annotations
 
 import csv
-import fcntl
 import os
 import subprocess
 import sys
@@ -64,11 +63,16 @@ def _run(script: str, *args: str, timeout: int = 600) -> str:
         return f"error: {script} not found in {INGEST} (set GOLF_INGEST)"
     os.makedirs(STORE, exist_ok=True)
     lock_path = os.path.join(STORE, ".sync.lock")
+    try:
+        import fcntl
+    except ImportError:
+        fcntl = None  # Windows: no flock; single-user desktop, low collision risk
     with open(lock_path, "w") as lock:
-        try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            return "error: another sync is already running — wait for it to finish"
+        if fcntl is not None:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                return "error: another sync is already running — wait for it to finish"
         try:
             r = subprocess.run([sys.executable, path, *args], cwd=INGEST,
                                capture_output=True, text=True, timeout=timeout)
@@ -132,7 +136,8 @@ def sync_arccos() -> str:
     if (cd := _cooldown_left("pull_arccos.py")):
         return cd
     out = _run("pull_arccos.py")
-    _mark_sync("pull_arccos.py")
+    if out.startswith("ok:"):
+        _mark_sync("pull_arccos.py")
     return out
 
 
@@ -142,7 +147,8 @@ def sync_ghin() -> str:
     if (cd := _cooldown_left("pull_ghin.py")):
         return cd
     out = _run("pull_ghin.py")
-    _mark_sync("pull_ghin.py")
+    if out.startswith("ok:"):
+        _mark_sync("pull_ghin.py")
     return out
 
 
