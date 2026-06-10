@@ -50,9 +50,12 @@ def _run(script: str, *args: str, timeout: int = 600) -> str:
                            capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
         return f"error: {script} timed out"
-    out = (r.stdout or "").strip().splitlines()
-    return ("ok: " if r.returncode == 0 else f"exit {r.returncode}: ") + \
-           (out[-1] if out else (r.stderr or "").strip()[-300:])
+    out_lines = (r.stdout or "").strip().splitlines()
+    tail = "\n".join(out_lines[-5:])
+    if r.returncode == 0:
+        return "ok: " + (tail or "done")
+    err = (r.stderr or "").strip()[-1000:]
+    return f"exit {r.returncode}: {tail}" + (f"\nstderr: {err}" if err else "")
 
 
 @mcp.tool()

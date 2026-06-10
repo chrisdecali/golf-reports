@@ -68,3 +68,20 @@ def test_import_valid_json_reaches_run(store, tmp_path, monkeypatch):
     f.write_text("{}")
     monkeypatch.setattr(server, "_run", lambda *a: "stubbed:" + a[1])
     assert server.import_18birdies(str(f)).startswith("stubbed:")
+
+
+def test_run_surfaces_stderr_and_tail(store, tmp_path, monkeypatch):
+    ingest = tmp_path / "ingest"
+    ingest.mkdir()
+    (ingest / "fake.py").write_text(
+        "import sys\n"
+        "print('line1'); print('line2'); print('line3')\n"
+        "print('the real error: token expired', file=sys.stderr)\n"
+        "sys.exit(3)\n")
+    monkeypatch.setenv("GOLF_INGEST", str(ingest))
+    monkeypatch.setenv("GOLF_STORE", store)
+    server = _load_server(store)
+    out = server._run("fake.py")
+    assert out.startswith("exit 3:")
+    assert "line2" in out                      # more than just the last line
+    assert "token expired" in out              # stderr included
