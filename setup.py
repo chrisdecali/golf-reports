@@ -56,6 +56,7 @@ def main() -> None:
                 meta["password_in_keyring"] = True
                 stored = "password in OS keychain"
             except Exception:
+                print("  note: OS keychain unavailable on this system.")
                 if _yes("  No OS keychain available. GHIN needs the password each sync "
                         "(12h tokens, no refresh). Store it in ~/.ghin_creds.json, "
                         "chmod 600, plaintext? [Y/n] "):

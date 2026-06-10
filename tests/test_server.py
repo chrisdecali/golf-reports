@@ -8,7 +8,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _SERVER_PATH = os.path.join(REPO, "mcp", "server.py")
 
 
-def _load_server(store: str = ""):
+def _load_server():
     """Load mcp/server.py via spec_from_file_location to avoid the mcp/ dir
     shadowing the installed mcp package when doing `from mcp.server.fastmcp import FastMCP`."""
     # Snapshot sys.path so the restore is safe even when duplicates are present
@@ -31,7 +31,7 @@ def _load_server(store: str = ""):
 @pytest.fixture
 def srv(store, monkeypatch):
     monkeypatch.setenv("GOLF_STORE", store)
-    return _load_server(store)
+    return _load_server()
 
 
 def test_import_rejects_outside_home(srv):
@@ -55,14 +55,14 @@ def test_import_rejects_control_chars(srv):
 def test_ingest_defaults_to_bundled_dir(store, monkeypatch):
     monkeypatch.delenv("GOLF_INGEST", raising=False)
     monkeypatch.setenv("GOLF_STORE", store)
-    server = _load_server(store)
+    server = _load_server()
     assert server.INGEST.endswith(os.path.join("golf-reports", "ingest"))
     assert os.path.isfile(os.path.join(server.INGEST, "pull_arccos.py"))
 
 
 def test_import_valid_json_reaches_run(store, tmp_path, monkeypatch):
     monkeypatch.setenv("GOLF_STORE", store)
-    server = _load_server(store)
+    server = _load_server()
     monkeypatch.setattr(server, "HOME", str(tmp_path))
     f = tmp_path / "archive.json"
     f.write_text("{}")
@@ -80,7 +80,7 @@ def test_run_surfaces_stderr_and_tail(store, tmp_path, monkeypatch):
         "sys.exit(3)\n")
     monkeypatch.setenv("GOLF_INGEST", str(ingest))
     monkeypatch.setenv("GOLF_STORE", store)
-    server = _load_server(store)
+    server = _load_server()
     out = server._run("fake.py")
     assert out.startswith("exit 3:")
     assert "line2" in out                      # more than just the last line
@@ -89,7 +89,7 @@ def test_run_surfaces_stderr_and_tail(store, tmp_path, monkeypatch):
 
 def test_sync_cooldown(store, monkeypatch):
     monkeypatch.setenv("GOLF_STORE", store)
-    server = _load_server(store)
+    server = _load_server()
     t = {"now": 1000.0}
     monkeypatch.setattr(server, "time", __import__("types").SimpleNamespace(time=lambda: t["now"]))
     server._mark_sync("pull_arccos.py")

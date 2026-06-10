@@ -131,11 +131,13 @@ def main() -> None:
         sys.exit("No rounds found — is this an 18Birdies account-data export?")
     os.makedirs(args.out_dir, exist_ok=True)
     path = os.path.join(args.out_dir, "18birdies_rounds.csv")
-    with open(path, "w", newline="", encoding="utf-8") as f:
+    tmp = path + ".tmp"
+    with open(tmp, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=COLS, extrasaction="ignore")
         w.writeheader()
         for r in rounds:
             w.writerow({k: ("" if r.get(k) is None else r.get(k)) for k in COLS})
+    os.replace(tmp, path)
     print(f"Wrote {path} — {len(rounds)} rounds")
 
 

@@ -26,7 +26,7 @@ python3 setup.py          # prompts for Arccos + GHIN email/password, optional 1
 ```
 Credentials are stored **only on your machine** (`~/.arccos_creds.json`,
 `~/.ghin_creds.json`, chmod 600) and never uploaded. Arccos stores a long-lived
-accessKey (password discarded); GHIN stores the login (needed for its 12h token).
+accessKey (password discarded); GHIN password goes to the OS keychain when available (plaintext file only with explicit consent — it's needed each sync, 12h tokens).
 
 ## 2. Use it in the Claude Desktop app
 **Cowork / Chat (recommended for non-devs):** install as a one-click **Desktop

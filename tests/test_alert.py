@@ -10,7 +10,8 @@ import post_round_alert as pra
 def test_first_run_baselines_without_alerting(store):
     new = pra.detect_new(store)
     assert new == []                          # first run: baseline only, no spam
-    seen = json.load(open(os.path.join(store, "_alerted.json")))
+    with open(os.path.join(store, "_alerted.json"), encoding="utf-8") as fh:
+        seen = json.load(fh)
     assert set(seen) == {"r1", "r2"}
 
 

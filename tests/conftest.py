@@ -26,6 +26,7 @@ def store(tmp_path):
     s = str(tmp_path / "store")
     os.makedirs(s)
 
+    # Subset of ROUND_COLS (pull_arccos.py) — only columns compute() currently reads. Add here if compute() grows.
     round_cols = ["round_id", "date", "course", "tee_name", "tee_yards", "slope",
                   "rating", "holes", "score", "par", "score_to_par", "putts",
                   "gir_hits", "gir_pct", "fairway_pct", "scramble_pct",

@@ -25,6 +25,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(HERE), "render"))
 import gen_combined as gc        # noqa: E402
 import gen_gps_pdf               # noqa: E402
 
+_SG_LABELS = {"off_tee": "Tee", "approach": "App", "short": "Short", "putting": "Putt"}
+
 
 def env_key(name: str) -> str | None:
     if os.environ.get(name):
@@ -33,6 +35,9 @@ def env_key(name: str) -> str | None:
         try:
             with open(os.path.expanduser(envfile), encoding="utf-8") as f:
                 for line in f:
+                    line = line.lstrip()
+                    if line.startswith("export "):
+                        line = line[7:].lstrip()
                     if line.startswith(name + "="):
                         return line.split("=", 1)[1].strip().strip("'\"") or None
         except FileNotFoundError:
@@ -49,7 +54,11 @@ def detect_new(store: str) -> list[str]:
         ids = [r["round_id"] for r in csv.DictReader(f) if r.get("round_id")]
     seen_path = os.path.join(store, "_alerted.json")
     first_run = not os.path.exists(seen_path)
-    seen = set() if first_run else set(json.load(open(seen_path, encoding="utf-8")))
+    if first_run:
+        seen = set()
+    else:
+        with open(seen_path, encoding="utf-8") as fh:
+            seen = set(json.load(fh))
     new = [i for i in ids if i not in seen]
     tmp = seen_path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
@@ -71,7 +80,7 @@ def build_message(store: str, rid: str) -> str:
     worst = min(((k, v) for k, v in sg.items() if k != "total" and v is not None),
                 key=lambda kv: kv[1], default=None)
     if worst:
-        lines.append(f"Biggest leak: {worst[0]} ({worst[1]:+.1f})")
+        lines.append(f"Biggest leak: {_SG_LABELS.get(worst[0], worst[0])} ({worst[1]:+.1f})")
     return "\n".join(lines)
 
 

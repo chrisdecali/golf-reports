@@ -83,7 +83,7 @@ def _run(script: str, *args: str, timeout: int = 600) -> str:
         if r.returncode == 0:
             return "ok: " + (tail or "done")
         err = (r.stderr or "").strip()[-1000:]
-        return f"exit {r.returncode}: {tail}" + (f"\nstderr: {err}" if err else "")
+        return f"exit {r.returncode}:" + (f" {tail}" if tail else "") + (f"\nstderr: {err}" if err else "")
 
 
 @mcp.tool()

@@ -20,6 +20,7 @@ def test_render_survives_none_score_to_par(store, tmp_path):
     assert os.path.exists(path)
     pdf = gen_gps_pdf.gen(store, out, "r2")
     assert os.path.exists(pdf)
+    assert "—" in open(path, encoding="utf-8").read()
     stats = gen_stats.gen(store, out, "r2")
     assert os.path.exists(stats)
 

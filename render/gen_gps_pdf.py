@@ -78,7 +78,7 @@ def gen(repo: str, out: str, rid: Optional[str] = None) -> str:
     with PdfPages(path) as pdf:
         # cover
         fig = plt.figure(figsize=(8.5, 2.4))
-        fig.text(0.5, 0.6, f"{d['course']} — {d['date']}", ha="center", fontsize=16, weight="bold")
+        fig.text(0.5, 0.6, f"{d.get('course') or '?'} — {d.get('date') or '?'}", ha="center", fontsize=16, weight="bold")
         stp = f"{d['score_to_par']:+d}" if isinstance(d.get("score_to_par"), int) else "—"
         fig.text(0.5, 0.32, f"{d.get('tee_name') or '?'} ({d.get('tee_yards') or '?'}y) · par {d.get('par') or '?'} · "
                             f"{d.get('score') or '?'} ({stp}) · {d.get('putts') or '?'} putts",
@@ -87,9 +87,7 @@ def gen(repo: str, out: str, rid: Optional[str] = None) -> str:
 
         for hid in sorted(shots_by_hole):
             m = hole_meta.get(hid, {})
-            meta = (f"Hole {hid} · par {m.get('par','?')} · {m.get('len_yd') or '?'}y · "
-                    f"{(m.get('score_to_par') if m.get('score_to_par') is not None else '')}"
-                    + ("" if m.get("score_to_par") is None else " to par"))
+            meta = f"Hole {hid} · par {m.get('par','?')} · {m.get('len_yd') or '?'}y · {gc._pm(m.get('score_to_par'))} to par"
             fig, ax = plt.subplots(figsize=(8.5, 8.5))
             if hid in gps_by_hole and any(s["start"] for s in gps_by_hole[hid]["shots"]):
                 _geo_page(ax, gps_by_hole[hid], meta)

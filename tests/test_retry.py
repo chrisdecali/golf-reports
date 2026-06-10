@@ -38,3 +38,15 @@ def test_retry_does_not_retry_4xx(mod, monkeypatch):
     with pytest.raises(urllib.error.HTTPError):
         mod._with_retry(fn)
     assert calls["n"] == 1
+
+
+@pytest.mark.parametrize("mod", [pull_arccos, pull_ghin])
+def test_retry_recovers_from_urlerror(mod, monkeypatch):
+    monkeypatch.setattr(mod.time, "sleep", lambda s: None)
+    state = {"n": 0}
+    def fn():
+        if state["n"] < 2:
+            state["n"] += 1
+            raise urllib.error.URLError("connection reset")
+        return {"ok": True}
+    assert mod._with_retry(fn) == {"ok": True}
