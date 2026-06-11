@@ -1,9 +1,26 @@
 {
-  "_note": "PEER = modeled carry yards for a ~12 handicap, age 30-39 (used for the carry-gap comparison). BAG = your measured carry, read from clubs.csv at runtime (TrackMan/Arccos smart distance). Edit PEER to retarget the comparison.",
-  "peer_label": "12-HCP (age 30-39)",
-  "peer_carry_yd": {
-    "Driver": 245, "3 Wood": 225, "5 Wood": 210, "Hybrid": 200,
-    "3 Iron": 200, "4 Iron": 190, "5 Iron": 180, "6 Iron": 170, "7 Iron": 160,
-    "8 Iron": 148, "9 Iron": 135, "PW": 120, "Wedge": 100, "GW": 105, "SW": 90, "LW": 75
-  }
+ "_note": "PEER = modeled carry yards for a ~12 handicap, age 30-39 (used for the carry-gap comparison). BAG = your measured carry, read from clubs.csv at runtime (TrackMan/Arccos smart distance). Edit PEER to retarget the comparison.",
+ "peer_label": "12-HCP (age 30-39)",
+ "peer_carry_yd": {
+  "Driver": 245,
+  "3 Wood": 225,
+  "5 Wood": 210,
+  "Hybrid": 200,
+  "3 Iron": 200,
+  "4 Iron": 190,
+  "5 Iron": 180,
+  "6 Iron": 170,
+  "7 Iron": 160,
+  "8 Iron": 148,
+  "9 Iron": 135,
+  "PW": 120,
+  "Wedge": 100,
+  "GW": 105,
+  "SW": 90,
+  "LW": 75,
+  "Pitching Wedge": 120,
+  "50 Wedge": 105,
+  "54 Wedge": 90,
+  "58 Wedge": 75
+ }
 }
