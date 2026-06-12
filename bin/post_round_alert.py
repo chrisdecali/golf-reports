@@ -18,7 +18,6 @@ import os
 import sys
 import urllib.parse
 import urllib.request
-import uuid
 
 HERE = os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "render"))
@@ -96,51 +95,17 @@ def send_telegram(text: str) -> bool:
         return bool(json.load(r).get("ok"))
 
 
-def send_document(path: str, caption: str = "") -> bool:
-    """Send a local file (the shot-map PDF) to Telegram via multipart sendDocument."""
-    token, chat = env_key("TELEGRAM_BOT_TOKEN"), env_key("TELEGRAM_CHAT_ID")
-    if not token or not chat:
-        print("[alert] telegram not configured — skipping document")
-        return False
-    if not path or not os.path.exists(path):
-        print(f"[alert] document missing, skipping: {path}", file=sys.stderr)
-        return False
-    boundary = "----golfreports" + uuid.uuid4().hex
-    parts = []
-    def _field(name: str, val: str) -> None:
-        parts.append(f"--{boundary}\r\nContent-Disposition: form-data; "
-                     f"name=\"{name}\"\r\n\r\n{val}\r\n".encode())
-    _field("chat_id", chat)
-    if caption:
-        _field("caption", caption)
-    with open(path, "rb") as fh:
-        blob = fh.read()
-    parts.append((f"--{boundary}\r\nContent-Disposition: form-data; name=\"document\"; "
-                  f"filename=\"{os.path.basename(path)}\"\r\n"
-                  f"Content-Type: application/pdf\r\n\r\n").encode() + blob + b"\r\n")
-    parts.append(f"--{boundary}--\r\n".encode())
-    req = urllib.request.Request(
-        f"https://api.telegram.org/bot{token}/sendDocument", data=b"".join(parts),
-        headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return bool(json.load(r).get("ok"))
-
-
 def main_for_store(store: str) -> int:
     for rid in detect_new(store):
-        pdf_path = None
         try:
             reports = os.path.join(store, "reports")
             gc.gen(store, reports, rid)
-            pdf_path = gen_gps_pdf.gen(store, reports, rid)
+            gen_gps_pdf.gen(store, reports, rid)
         except Exception as e:  # render failure must not block the alert
             print(f"[alert] render failed for {rid}: {e}", file=sys.stderr)
         try:
             msg = build_message(store, rid)
             print(f"[alert] telegram sent: {send_telegram(msg)} for {rid}")
-            if pdf_path:  # attach the shot-map PDF so it's viewable on the phone
-                caption = msg.splitlines()[0][:1024]   # Telegram caption hard limit
-                print(f"[alert] pdf sent: {send_document(pdf_path, caption)} for {rid}")
         except Exception as e:  # alerting must never fail the sync
             print(f"[alert] alert failed for {rid}: {e}", file=sys.stderr)
     try:
