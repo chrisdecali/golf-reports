@@ -47,6 +47,8 @@ import urllib.request
 from datetime import datetime, timezone
 from typing import Any, Optional
 
+from weather import fetch_round_weather
+
 # ---------------------------------------------------------------------------
 # Paths / config
 # ---------------------------------------------------------------------------
@@ -596,6 +598,9 @@ ROUND_COLS = [
     "sg_total_broadie", "sg_off_tee_broadie", "sg_approach_broadie",
     "sg_short_broadie", "sg_putting_broadie",
     "user_hcp", "drive_hcp", "approach_hcp", "chip_hcp", "sand_hcp", "putt_hcp",
+    # Weather columns (external: Open-Meteo historical reanalysis by course lat/lng
+    # + round mid-time UTC; non-GPS — always published regardless of GOLF_INCLUDE_GPS).
+    "temp_f", "wind_mph", "wind_dir_deg", "wind_dir", "weather",
 ]
 HOLE_COLS = [
     "round_id", "date", "course", "hole_id", "par", "par_source", "shots", "net_score",
@@ -619,7 +624,8 @@ HCP_COLS = ["round_id", "user_hcp", "drive_hcp", "approach_hcp", "chip_hcp",
             "sand_hcp", "putt_hcp"]
 
 
-def build_round(summary, detail, tee, hcp, clubid_map, rdash, pulled_at):
+def build_round(summary, detail, tee, hcp, clubid_map, rdash, pulled_at,
+                course_lat=None, course_lng=None):
     holes = [h for h in (detail.get("holes") or []) if h.get("shouldIgnore") != "T"]
     date = (summary.get("startTime") or "")[:10]
     course = summary.get("courseName") or detail.get("courseName") or "?"
@@ -762,6 +768,38 @@ def build_round(summary, detail, tee, hcp, clubid_map, rdash, pulled_at):
     nh = len(holes)
     score = summary.get("scoreOverride") or summary.get("noOfShots")
     sec = overall.get("overallSection") or {}
+
+    # Weather enrichment (external: Open-Meteo historical reanalysis — not Arccos).
+    # Uses course lat/lng (fetched during build) + round mid-time UTC hour.
+    # Always graceful: returns {} on any failure so the pull is never broken.
+    wx: dict = {}
+    if course_lat is not None and course_lng is not None and date:
+        try:
+            start_str = summary.get("startTime") or ""
+            end_str = summary.get("endTime") or ""
+            _fmt = "%Y-%m-%dT%H:%M:%S.%fZ"
+            def _parse_utc(s: str) -> Optional[datetime]:
+                for fmt in ("%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%SZ"):
+                    try:
+                        return datetime.strptime(s, fmt).replace(tzinfo=timezone.utc)
+                    except ValueError:
+                        continue
+                return None
+            t_start = _parse_utc(start_str)
+            t_end = _parse_utc(end_str)
+            if t_start and t_end:
+                mid_ts = t_start.timestamp() + (t_end.timestamp() - t_start.timestamp()) / 2
+                mid_hour = int(datetime.fromtimestamp(mid_ts, tz=timezone.utc).hour)
+            elif t_start:
+                mid_hour = int(t_start.hour)
+            else:
+                mid_hour = 12  # noon UTC fallback
+            wx = fetch_round_weather(
+                course_lat, course_lng, date, mid_hour, cache_dir=OUT_DIR
+            )
+        except Exception:  # noqa: BLE001
+            wx = {}
+
     rr = {
         "round_id": rid, "date": date, "course": course,
         "tee_name": tee.get("name"), "tee_yards": tee.get("distance"),
@@ -792,6 +830,10 @@ def build_round(summary, detail, tee, hcp, clubid_map, rdash, pulled_at):
         "user_hcp": hcp.get("userHcp"), "drive_hcp": hcp.get("driveHcp"),
         "approach_hcp": hcp.get("approachHcp"), "chip_hcp": hcp.get("chipHcp"),
         "sand_hcp": hcp.get("sandHcp"), "putt_hcp": hcp.get("puttHcp"),
+        # Weather (Open-Meteo historical reanalysis; {} when unavailable).
+        "temp_f": wx.get("temp_f"), "wind_mph": wx.get("wind_mph"),
+        "wind_dir_deg": wx.get("wind_dir_deg"), "wind_dir": wx.get("wind_dir"),
+        "weather": wx.get("weather"),
         "pulled_at": pulled_at,
     }
     return rr, hole_rows, shot_rows
@@ -907,6 +949,7 @@ def build(pulled_at: str) -> dict:
 
     # Load round details + course tees + per-round dashboards.
     details, courses, rdashes = {}, {}, {}
+    course_latlng: dict = {}  # courseId -> (lat, lng) for weather enrichment
     for r in summaries:
         rid = r.get("roundId")
         d = _load(os.path.join(CACHE, "rounds", f"{rid}.json"))
@@ -918,6 +961,9 @@ def build(pulled_at: str) -> dict:
             c = _load(os.path.join(CACHE, "courses", f"{cid}.json"))
             if c:
                 courses[cid] = {str(t.get("teeId")): t for t in (c.get("courseTees") or [])}
+                lat, lng = c.get("latitude"), c.get("longitude")
+                if lat is not None and lng is not None:
+                    course_latlng[cid] = (float(lat), float(lng))
 
     clubid_map = build_clubid_map(meta, list(details.values()))
 
@@ -927,9 +973,12 @@ def build(pulled_at: str) -> dict:
         detail = details.get(rid)
         if not detail:
             continue
-        tee = courses.get(r.get("courseId"), {}).get(str(r.get("teeId")), {})
+        cid = r.get("courseId")
+        tee = courses.get(cid, {}).get(str(r.get("teeId")), {})
         hcp = hcp_by_round.get(rid, {})
-        rr, hr, sr = build_round(r, detail, tee, hcp, clubid_map, rdashes.get(rid), pulled_at)
+        c_lat, c_lng = (course_latlng.get(cid) or (None, None))
+        rr, hr, sr = build_round(r, detail, tee, hcp, clubid_map, rdashes.get(rid), pulled_at,
+                                 course_lat=c_lat, course_lng=c_lng)
         round_rows.append(rr)
         hole_rows.extend(hr)
         shot_rows.extend(sr)
