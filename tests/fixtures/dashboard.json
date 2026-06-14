@@ -1,0 +1,77 @@
+{
+  "driving": {
+    "distanceVsAccuracy": {
+      "sgDistance": 0.3,
+      "sgAccuracy": -0.7,
+      "sgPenalties": -0.1
+    },
+    "drivingDistance": {
+      "averageDistance": {"value": 245.0, "unit": "Yards"},
+      "goal": {"value": 260.0},
+      "longestDrive": 287,
+      "drivingCount": 18
+    },
+    "drivingByHoleLength": [
+      {"slab": {"value": "350-400", "unit": "Yards"}, "sga": -0.4, "shotsCount": 6},
+      {"slab": {"value": "400-450", "unit": "Yards"}, "sga": -0.9, "shotsCount": 4}
+    ]
+  },
+  "approach": {
+    "approachByPinDistance": [
+      {"slab": {"value": "50-100", "unit": "Yards"}, "sga": -0.5, "shotsCount": 8},
+      {"slab": {"value": "100-150", "unit": "Yards"}, "sga": -1.1, "shotsCount": 12}
+    ],
+    "approachByTerrain": [
+      {"terrain": "fairway", "sga": -0.6, "shotsCount": 15},
+      {"terrain": "rough", "sga": -1.4, "shotsCount": 7},
+      {"terrain": "sand", "sga": -2.1, "shotsCount": 2}
+    ]
+  },
+  "short": {
+    "chipByPinDistance": [
+      {"slab": {"value": "0-20", "unit": "Yards"}, "sga": -0.2, "shotsCount": 5},
+      {"slab": {"value": "20-40", "unit": "Yards"}, "sga": -0.8, "shotsCount": 3}
+    ],
+    "chippingAccuracy": [
+      {
+        "slab": {"value": "0-20", "unit": "Yards"},
+        "avgDistanceToPin": {"value": 4.5, "unit": "Feet"},
+        "avgDistanceToPinGoal": {"value": 3.0}
+      }
+    ],
+    "sandByPinDistance": [
+      {"slab": {"value": "0-30", "unit": "Yards"}, "sga": -1.2, "shotsCount": 2}
+    ],
+    "sandAccuracy": [
+      {
+        "slab": {"value": "0-30", "unit": "Yards"},
+        "avgDistanceToPin": {"value": 8.0, "unit": "Feet"},
+        "avgDistanceToPinGoal": {"value": 5.0}
+      }
+    ]
+  },
+  "putting": {
+    "puttingByLength": [
+      {"slab": {"value": "0-5", "unit": "Feet"}, "sga": 0.1, "shotsCount": 20},
+      {"slab": {"value": "5-10", "unit": "Feet"}, "sga": -0.3, "shotsCount": 10},
+      {"slab": {"value": "10-20", "unit": "Feet"}, "sga": -0.7, "shotsCount": 8}
+    ]
+  },
+  "overall": {
+    "overallSection": {
+      "sga": -2.5,
+      "drivingSga": -0.5,
+      "approachSga": -1.0,
+      "shortSga": -0.6,
+      "puttingSga": -0.4,
+      "caddieInsights": {
+        "helping": [
+          {"shotType": "driving", "sga": 0.3, "label": "Long drives"}
+        ],
+        "hurting": [
+          {"shotType": "approach", "from": "rough", "fromDistance": {"value": "100-150", "unit": "Yards"}, "sga": -1.1, "label": "Approach from rough"}
+        ]
+      }
+    }
+  }
+}
